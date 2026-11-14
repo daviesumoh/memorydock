@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from pymongo.asynchronous.change_stream import AsyncChangeStream
 from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.asynchronous.database import AsyncDatabase
 from pymongo.errors import DuplicateKeyError
@@ -89,3 +90,8 @@ async def move_head(
 async def history(db: Db, limit: int) -> list[dict[str, Any]]:
     cursor = db.policies.find({}, {"schema_text": 0, "authz_text": 0, "approvals_text": 0})
     return [d async for d in cursor.sort("published_at", -1).limit(limit)]
+
+
+async def watch_head(db: Db, *, max_await_ms: int) -> AsyncChangeStream[dict[str, Any]]:
+    """Change stream on the head; try_next() returns None after max_await_ms without changes."""
+    return await db.policy_heads.watch(max_await_time_ms=max_await_ms)

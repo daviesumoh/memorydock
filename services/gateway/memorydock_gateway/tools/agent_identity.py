@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from fastmcp import FastMCP
-from fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
+from memorydock_core.audit.events import Resource
 from memorydock_core.models.mcp import WhoAmI
+
+from memorydock_gateway.tool_support import audit, principal, tool_errors
 
 
 def register(mcp: FastMCP) -> None:
@@ -15,5 +17,15 @@ def register(mcp: FastMCP) -> None:
         ),
         annotations=ToolAnnotations(read_only_hint=True, open_world_hint=False),
     )
+    @tool_errors
     async def whoami() -> WhoAmI:
-        raise ToolError("not_implemented: whoami is not implemented yet")
+        p = await principal()
+        await audit(p, "identity.whoami", Resource(type="session", id=p.session_id))
+        return WhoAmI(
+            user_id=p.user_id,
+            email=p.user.email,
+            org_id=p.tenant_id,
+            session_id=p.session_id,
+            client=p.client,
+            readable_scopes=sorted(p.user.scopes),
+        )

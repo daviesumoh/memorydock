@@ -7,12 +7,18 @@ POST /mcp a 307 redirect, which MCP clients don't follow.
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastmcp import FastMCP
 from memorydock_core.config import Settings, get_settings
+from memorydock_core.db import ping
 from memorydock_core.errors import NotFound
 
-from memorydock_gateway import errors, tools
+from memorydock_gateway import errors, logs, runtime, state, tools
+from memorydock_gateway.auth import build_auth
 from memorydock_gateway.middleware import CatchAll, RequestId, ScopedCors
 from memorydock_gateway.routers import collect
 
@@ -20,20 +26,40 @@ API_TITLE = "memorydock gateway"
 API_VERSION = "0.1.0"
 
 
-def build_mcp() -> FastMCP:
-    mcp = FastMCP("memorydock", mask_error_details=True)
+def build_mcp(settings: Settings | None = None) -> FastMCP:
+    """With settings, /mcp requires an AuthKit bearer token; without, it is unauthenticated
+    (unit tests and OpenAPI export only)."""
+    auth = build_auth(settings) if settings is not None and settings.authkit_domain else None
+    mcp = FastMCP("memorydock", auth=auth, mask_error_details=True)
     tools.register_all(mcp)
     return mcp
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
-    mcp_app = build_mcp().http_app(path="/mcp", stateless_http=True)
+    logs.configure(settings)
+    mcp_app = build_mcp(settings).http_app(path="/mcp", stateless_http=True)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        async with mcp_app.lifespan(app):
+            if not settings.mongodb_uri:
+                if settings.env == "prod":
+                    raise RuntimeError("MONGODB_URI is required in prod")
+                yield  # unit tests and OpenAPI export: no database
+                return
+            rt = await runtime.start(settings)
+            state.set_runtime(rt)
+            try:
+                yield
+            finally:
+                state.set_runtime(None)
+                await runtime.stop(rt)
 
     app = FastAPI(
         title=API_TITLE,
         version=API_VERSION,
-        lifespan=mcp_app.lifespan,
+        lifespan=lifespan,
         separate_input_output_schemas=False,
         docs_url=None,
         redoc_url=None,
@@ -43,6 +69,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/healthz", include_in_schema=False)
     async def healthz() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/readyz", include_in_schema=False)
+    async def readyz() -> JSONResponse:
+        try:
+            rt = state.current()
+            await ping(rt.db)
+            version = rt.policy.pdp.version
+        except Exception:
+            return JSONResponse({"status": "not_ready"}, status_code=503)
+        return JSONResponse(
+            {"status": "ok", "policy_version": version, "commit": settings.git_sha or None}
+        )
 
     from memorydock_gateway.api import agent, console
 
