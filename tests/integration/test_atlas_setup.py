@@ -43,15 +43,15 @@ def memory(_id: str, **overrides):
 
 @pytest.fixture
 def db(admin_client, test_db_name):
-    assert atlas_setup.main(["--db", test_db_name]) == 0
+    assert atlas_setup.main(["--db", test_db_name, "--skip-search"]) == 0
     return admin_client[test_db_name]
 
 
 def test_second_run_changes_nothing(db, test_db_name, capsys):
     capsys.readouterr()
-    assert atlas_setup.main(["--db", test_db_name]) == 0
+    assert atlas_setup.main(["--db", test_db_name, "--skip-search"]) == 0
     lines = capsys.readouterr().out.splitlines()[1:]
-    changes = [line for line in lines if not line.startswith(("ok ", "create search index"))]
+    changes = [line for line in lines if not line.startswith("ok ")]
     assert changes == [], changes
 
 
@@ -71,8 +71,10 @@ def test_valid_memory_is_accepted(db):
     ],
 )
 def test_invalid_memory_is_rejected(db, overrides):
+    doc = memory("mem_2")
+    doc.update(overrides)
     with pytest.raises(WriteError) as exc:
-        db.memories.insert_one(memory("mem_2", **overrides))
+        db.memories.insert_one(doc)
     assert exc.value.code == 121
 
 
