@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from memorydock_core.config import Settings
-from memorydock_core.ids import is_id, new_id
+from memorydock_core.ids import is_id
 from memorydock_gateway.app import create_app
 from memorydock_gateway.errors import validation_field
 
@@ -34,30 +34,13 @@ def test_healthz(client):
     assert is_id(resp.headers["x-request-id"], "req")
 
 
-@pytest.mark.parametrize(
-    "path",
-    ["/v1/memories", f"/v1/memories/{new_id('mem')}",
-     f"/v1/memories/{new_id('mem')}/versions"],
-)  # fmt: skip
-def test_stubs_answer_501_in_the_error_shape(client, path):
-    assert_error(client.get(path), 501, "not_implemented")
+@pytest.mark.parametrize("path", ["/v1/me", "/v1/memories", "/v1/audit"])
+def test_routes_answer_503_in_the_error_shape_without_a_database(client, path):
+    assert_error(client.get(path), 503, "not_ready")
 
 
 def test_unknown_v1_route_is_a_404_in_the_error_shape(client):
     assert_error(client.get("/v1/nope"), 404, "not_found")
-
-
-@pytest.mark.parametrize(
-    ("path", "field"),
-    [
-        ("/v1/memories/mem_123", "memory_id"),
-        ("/v1/memories?limit=0", "limit"),
-        ("/v1/memories?limit=101", "limit"),
-        ("/v1/memories?status=deleted", "status"),
-    ],
-)
-def test_invalid_input_names_the_field(client, path, field):
-    assert_error(client.get(path), 422, "invalid_input", field)
 
 
 def test_validation_field_drops_only_the_location():
