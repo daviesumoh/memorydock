@@ -1,0 +1,27 @@
+{
+  "verified_at": "2026-11-14T18:11:56.874000+00:00",
+  "mongodb_version": "9.0.7",
+  "checks": {
+    "automated_embedding": {
+      "ok": true,
+      "query_form": "string",
+      "seconds_until_searchable": 2.6,
+      "detail": "text query matched the onboarding memory first"
+    },
+    "rank_fusion": {
+      "ok": true,
+      "results": 3,
+      "detail": "onboarding ranked first; other tenant and proposed memories excluded"
+    },
+    "forget_purge": {
+      "ok": true,
+      "seconds_until_absent": 2.5,
+      "limit_seconds": 60,
+      "detail": "nulling embed_text removed the memory from unfiltered vector results"
+    },
+    "transaction": {
+      "ok": true,
+      "detail": "committed across 4 collections as the gateway user"
+    }
+  }
+}
