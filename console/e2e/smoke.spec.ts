@@ -23,6 +23,17 @@ test("the initiate-login route starts a sign-in without a session", async ({ req
   expect(authorizeRedirect(response.headers()["location"]).pathname).toBe("/user_management/authorize");
 });
 
+test("the gateway proxy refuses a write from another origin", async ({ request }) => {
+  const response = await request.post("/api/gateway/v1/memories", {
+    maxRedirects: 0,
+    headers: { "sec-fetch-site": "same-site", origin: "http://localhost:3001" },
+    data: { content: "planted" },
+  });
+
+  expect(response.status()).toBe(403);
+  expect((await response.json()).code).toBe("cross_origin_request");
+});
+
 test("the gateway proxy answers 401 JSON, not a redirect, without a session", async ({ request }) => {
   const response = await request.get("/api/gateway/v1/me", { maxRedirects: 0 });
 

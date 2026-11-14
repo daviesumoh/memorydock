@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { buildUpstreamUrl, forwardToGateway, isForwardablePath } from "./gateway-proxy";
+import { buildUpstreamUrl, forwardToGateway, isForwardablePath, isSameOriginRequest } from "./gateway-proxy";
 
 const TOKEN = "eyJhbGciOiJSUzI1NiJ9.test-access-token.signature";
 const GATEWAY = new URL("https://gateway.example.com");
@@ -53,6 +53,47 @@ describe("isForwardablePath", () => {
   });
 });
 
+describe("isSameOriginRequest", () => {
+  const url = "http://localhost:3000/api/gateway/v1/memories/mem_1";
+
+  it.each(["GET", "HEAD"])("lets %s through whatever its origin, since reads change nothing", (method) => {
+    const request = new Request(url, { method, headers: { "sec-fetch-site": "cross-site" } });
+    expect(isSameOriginRequest(request)).toBe(true);
+  });
+
+  it.each([
+    ["same-origin", true],
+    ["same-site", false],
+    ["cross-site", false],
+    ["none", false],
+  ])("for a POST, Sec-Fetch-Site %s gives %s", (fetchSite, expected) => {
+    const request = new Request(url, { method: "POST", headers: { "sec-fetch-site": fetchSite } });
+    expect(isSameOriginRequest(request)).toBe(expected);
+  });
+
+  it("does not let a matching Origin override a same-site Sec-Fetch-Site", () => {
+    const request = new Request(url, {
+      method: "DELETE",
+      headers: { "sec-fetch-site": "same-site", origin: "http://localhost:3000" },
+    });
+    expect(isSameOriginRequest(request)).toBe(false);
+  });
+
+  it.each([
+    ["http://localhost:3000", true],
+    ["http://localhost:3001", false],
+    ["https://localhost:3000", false],
+    ["null", false],
+  ])("without Fetch Metadata, falls back to Origin %s -> %s", (origin, expected) => {
+    const request = new Request(url, { method: "PATCH", headers: { origin } });
+    expect(isSameOriginRequest(request)).toBe(expected);
+  });
+
+  it("refuses a state-changing request that carries neither header", () => {
+    expect(isSameOriginRequest(new Request(url, { method: "POST" }))).toBe(false);
+  });
+});
+
 describe("buildUpstreamUrl", () => {
   it("keeps the query string and a base path on the gateway URL", () => {
     const url = buildUpstreamUrl(new URL("https://gw.example.com/base/"), ["v1", "audit"], "?cursor=abc");
@@ -81,6 +122,23 @@ describe("forwardToGateway", () => {
 
     expect(response.status).toBe(401);
     expect(await response.json()).toMatchObject({ code: "not_signed_in" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 without calling the gateway for a cross-origin write, even with a session", async () => {
+    const fetchMock = stubFetch(async () => new Response(null, { status: 204 }));
+    const response = await forwardToGateway({
+      request: new Request("http://localhost:3000/api/gateway/v1/memories/mem_1", {
+        method: "DELETE",
+        headers: { "sec-fetch-site": "same-site", origin: "http://localhost:3001" },
+      }),
+      path: ["v1", "memories", "mem_1"],
+      accessToken: TOKEN,
+      gatewayUrl: GATEWAY,
+    });
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ code: "cross_origin_request" });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -142,7 +200,12 @@ describe("forwardToGateway", () => {
     await forwardToGateway({
       request: new Request("http://localhost:3000/api/gateway/v1/memories/mem_1", {
         method: "PATCH",
-        headers: { "if-match": '"3"', "last-event-id": "evt_9", "content-type": "application/json" },
+        headers: {
+          "if-match": '"3"',
+          "last-event-id": "evt_9",
+          "content-type": "application/json",
+          "sec-fetch-site": "same-origin",
+        },
         body: JSON.stringify({ content: "edited" }),
       }),
       path: ["v1", "memories", "mem_1"],
@@ -253,7 +316,10 @@ describe("forwardToGateway", () => {
 
     stubFetch(async () => new Response(null, { status: 204 }));
     const empty = await forwardToGateway({
-      request: new Request("http://localhost:3000/api/gateway/v1/memories/mem_1", { method: "DELETE" }),
+      request: new Request("http://localhost:3000/api/gateway/v1/memories/mem_1", {
+        method: "DELETE",
+        headers: { "sec-fetch-site": "same-origin" },
+      }),
       path: ["v1", "memories", "mem_1"],
       accessToken: TOKEN,
       gatewayUrl: GATEWAY,

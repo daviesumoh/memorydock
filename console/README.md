@@ -28,11 +28,12 @@ pnpm --filter memorydock-console dev
 Browser code calls `/api/gateway/v1/...`. The route handler reads the session's access token, adds it as a bearer token and forwards the request to `<GATEWAY_URL>/v1/...`.
 
 - Only `/v1` paths are forwarded; anything else gets a 404 from the console.
+- POST, PUT, PATCH and DELETE must come from the console's own pages: `Sec-Fetch-Site` has to be `same-origin`, or, for a browser that does not send it, `Origin` has to match. The session cookie is `SameSite=Lax`, which would still allow a page on another localhost port or a sibling subdomain to send it.
 - Request and response headers pass through fixed allow-lists. Cookies are never sent to the gateway, and `Set-Cookie` from the gateway is dropped.
 - Response bodies stream, so server-sent events work through the proxy.
 - Only JSON and `text/event-stream` responses are passed on. Proxied responses are served from the console's origin, so a gateway response that a browser could render (HTML, SVG, an untyped body) is refused with a 502 instead. Every proxy response carries `X-Content-Type-Options: nosniff` and a sandboxing `Content-Security-Policy`.
 - The proxy waits 15 seconds for response headers. Streams stay open after that.
-- Proxy errors use the shape `{ code, message, request_id }`, with codes `not_signed_in` (401), `not_found` (404), `gateway_unreachable` (502), `gateway_bad_response` (502) and `gateway_timeout` (504).
+- Proxy errors use the shape `{ code, message, request_id }`, with codes `not_signed_in` (401), `cross_origin_request` (403), `not_found` (404), `gateway_unreachable` (502), `gateway_bad_response` (502) and `gateway_timeout` (504).
 
 ## Checks
 

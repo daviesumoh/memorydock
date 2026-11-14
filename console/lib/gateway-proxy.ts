@@ -31,6 +31,7 @@ export const UPSTREAM_HEADERS_TIMEOUT_MS = 15_000;
 
 export type ProxyErrorCode =
   | "not_signed_in"
+  | "cross_origin_request"
   | "not_found"
   | "gateway_unreachable"
   | "gateway_timeout"
@@ -62,6 +63,17 @@ export function isForwardablePath(path: string[]): boolean {
   return path.every((segment) => segment !== "" && segment !== "." && segment !== "..");
 }
 
+// The session cookie is SameSite=Lax, which still lets a page on another port
+// of localhost or a sibling subdomain (same site, different origin) send it on
+// a POST. State-changing requests must come from the console's own pages.
+export function isSameOriginRequest(request: Request): boolean {
+  if (request.method === "GET" || request.method === "HEAD") return true;
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite !== null) return fetchSite === "same-origin";
+  // Browsers without Fetch Metadata still send Origin on non-GET requests.
+  return request.headers.get("origin") === new URL(request.url).origin;
+}
+
 export function buildUpstreamUrl(gatewayUrl: URL, path: string[], search: string): URL {
   const upstream = new URL(gatewayUrl);
   const basePath = upstream.pathname.replace(/\/+$/, "");
@@ -79,6 +91,9 @@ export async function forwardToGateway({
 }: ForwardOptions): Promise<Response> {
   const requestId = crypto.randomUUID();
 
+  if (!isSameOriginRequest(request)) {
+    return errorResponse(403, "cross_origin_request", "Request did not come from the console", requestId);
+  }
   if (!accessToken) {
     return errorResponse(401, "not_signed_in", "Sign in to use the console", requestId);
   }
