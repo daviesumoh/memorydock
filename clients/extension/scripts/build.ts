@@ -29,7 +29,12 @@ await build({
   // Content scripts cannot be ES modules, so every entry is a plain script.
   format: "iife",
   target: "chrome120",
-  define: { CONSOLE_URL: JSON.stringify(config.consoleUrl.href) },
+  define: {
+    CONSOLE_URL: JSON.stringify(config.consoleUrl.href),
+    GATEWAY_URL: JSON.stringify(config.gatewayUrl.href),
+    AUTHKIT_DOMAIN: JSON.stringify(config.authkitDomain.origin),
+    CLIENT_ID: JSON.stringify(config.clientId),
+  },
   logLevel: "warning",
 });
 

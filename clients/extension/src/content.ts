@@ -1,4 +1,4 @@
-import { badgeText, type MessageReply } from "./messages.ts";
+import { badgeText, type Reply } from "./messages.ts";
 
 const HOST_ID = "memorydock-badge";
 
@@ -19,9 +19,11 @@ function renderBadge(text: string): HTMLElement {
 }
 
 async function main() {
-  const reply = (await chrome.runtime.sendMessage({ type: "get_status" })) as MessageReply;
-  if (!reply.ok) return;
-  const host = renderBadge(badgeText(reply.status));
+  // Page facts (conversation, project, temporary chat) come from the verified
+  // DOM contract, which is not served yet; until then the page reports none.
+  const reply = (await chrome.runtime.sendMessage({ type: "get_status", page: null })) as Reply;
+  if (!reply.ok || !("capture" in reply)) return;
+  const host = renderBadge(badgeText(reply.capture));
 
   // After the extension reloads, this script is orphaned: chrome.runtime.id is
   // gone and messaging throws. Remove the badge instead of showing stale state.

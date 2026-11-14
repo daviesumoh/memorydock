@@ -6,6 +6,7 @@ const valid = {
   GATEWAY_URL: "https://gateway.example.com",
   AUTHKIT_DOMAIN: "https://example.authkit.app",
   CONSOLE_URL: "https://console.example.com",
+  CLIENT_ID: "client_01EXTENSIONTEST",
 };
 
 describe("parseConfig", () => {
@@ -26,9 +27,17 @@ describe("parseConfig", () => {
     expect(config.consoleUrl.protocol).toBe("http:");
   });
 
-  it.each(["GATEWAY_URL", "AUTHKIT_DOMAIN", "CONSOLE_URL"])("names %s when it is missing or empty", (name) => {
+  it.each(["GATEWAY_URL", "AUTHKIT_DOMAIN", "CONSOLE_URL", "CLIENT_ID"])("names %s when it is missing or empty", (name) => {
     expect(() => parseConfig({ ...valid, [name]: undefined })).toThrow(name);
     expect(() => parseConfig({ ...valid, [name]: "" })).toThrow(name);
+  });
+
+  it("reads the client id", () => {
+    expect(parseConfig(valid).clientId).toBe("client_01EXTENSIONTEST");
+  });
+
+  it("refuses a client id that could change the authorize URL", () => {
+    expect(() => parseConfig({ ...valid, CLIENT_ID: "client&redirect_uri=x" })).toThrow("unexpected characters");
   });
 
   it("rejects a value that is not a URL", () => {
