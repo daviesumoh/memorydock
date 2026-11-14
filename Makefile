@@ -1,4 +1,4 @@
-.PHONY: setup hooks lint scan privacy test check-env atlas-setup atlas-roles test-integration
+.PHONY: setup hooks lint scan privacy test check-env atlas-setup atlas-roles verify-preview test-integration
 
 PY_SOURCES := packages scripts tests
 # deptry runs per package directory so each package is checked against its own dependencies.
@@ -35,6 +35,10 @@ atlas-setup:
 # Preview only; apply with: uv run python scripts/atlas_roles.py --apply
 atlas-roles:
 	uv run python scripts/atlas_roles.py
+
+# Live-cluster check of the search features recall depends on; writes docs/verify_preview_results.json.
+verify-preview:
+	uv run python -u scripts/verify_preview.py
 
 # Needs MONGODB_URI_ADMIN; each run creates and drops its own memorydock_test_<random> database.
 test-integration:
