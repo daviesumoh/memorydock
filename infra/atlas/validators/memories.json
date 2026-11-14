@@ -1,0 +1,310 @@
+{
+  "$and": [
+    {
+      "$jsonSchema": {
+        "bsonType": "object",
+        "required": [
+          "_id",
+          "tenant_id",
+          "scope_key",
+          "scope_level",
+          "type",
+          "status",
+          "category",
+          "content",
+          "embed_text",
+          "entities",
+          "provenance",
+          "trust",
+          "validity",
+          "version",
+          "content_hash",
+          "instruction_like",
+          "inject_in_work",
+          "sensitivity",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "_id": {
+            "bsonType": "string",
+            "pattern": "^mem_"
+          },
+          "tenant_id": {
+            "bsonType": "string"
+          },
+          "scope_key": {
+            "bsonType": "string",
+            "pattern": "^(user|project|team|org):"
+          },
+          "scope_level": {
+            "enum": [
+              "user",
+              "project",
+              "team",
+              "org"
+            ]
+          },
+          "type": {
+            "enum": [
+              "fact",
+              "decision",
+              "preference",
+              "procedure",
+              "finding",
+              "open_question",
+              "episode"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "proposed",
+              "superseded",
+              "conflict",
+              "disputed",
+              "expired",
+              "forgotten"
+            ]
+          },
+          "category": {
+            "bsonType": [
+              "string",
+              "null"
+            ]
+          },
+          "category_rules": {
+            "bsonType": [
+              "object",
+              "null"
+            ]
+          },
+          "inject_in_work": {
+            "bsonType": "bool"
+          },
+          "content": {
+            "bsonType": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000
+          },
+          "embed_text": {
+            "bsonType": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "entities": {
+            "bsonType": [
+              "array",
+              "null"
+            ]
+          },
+          "provenance": {
+            "bsonType": "object",
+            "required": [
+              "source_client",
+              "actor_user",
+              "captured_by",
+              "turn_ids"
+            ],
+            "properties": {
+              "source_client": {
+                "enum": [
+                  "claude-code",
+                  "codex",
+                  "claude-app",
+                  "chatgpt",
+                  "console",
+                  "worker",
+                  "other"
+                ]
+              },
+              "captured_by": {
+                "enum": [
+                  "hook",
+                  "extension",
+                  "mcp_tool",
+                  "console",
+                  "distiller"
+                ]
+              },
+              "actor_user": {
+                "bsonType": "string"
+              },
+              "session_id": {
+                "bsonType": [
+                  "string",
+                  "null"
+                ]
+              },
+              "conversation_id": {
+                "bsonType": [
+                  "string",
+                  "null"
+                ]
+              },
+              "turn_ids": {
+                "bsonType": "array"
+              },
+              "also_seen_in": {
+                "bsonType": "array"
+              },
+              "extracted_by": {
+                "bsonType": [
+                  "object",
+                  "null"
+                ]
+              }
+            }
+          },
+          "trust": {
+            "bsonType": "object",
+            "required": [
+              "asserted_by",
+              "confidence",
+              "flags"
+            ],
+            "properties": {
+              "asserted_by": {
+                "enum": [
+                  "user_stated",
+                  "user_confirmed",
+                  "extracted_user",
+                  "agent_inferred"
+                ]
+              },
+              "confidence": {
+                "bsonType": [
+                  "double",
+                  "int"
+                ],
+                "minimum": 0,
+                "maximum": 1
+              },
+              "flags": {
+                "bsonType": "int",
+                "minimum": 0
+              }
+            }
+          },
+          "validity": {
+            "bsonType": "object",
+            "required": [
+              "valid_from"
+            ],
+            "properties": {
+              "valid_from": {
+                "bsonType": "date"
+              },
+              "expires_at": {
+                "bsonType": [
+                  "date",
+                  "null"
+                ]
+              }
+            }
+          },
+          "supersedes": {
+            "bsonType": [
+              "string",
+              "null"
+            ]
+          },
+          "superseded_by": {
+            "bsonType": [
+              "string",
+              "null"
+            ]
+          },
+          "conflicts_with": {
+            "bsonType": "array"
+          },
+          "version": {
+            "bsonType": "int",
+            "minimum": 1
+          },
+          "content_hash": {
+            "bsonType": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "instruction_like": {
+            "bsonType": "bool"
+          },
+          "sensitivity": {
+            "bsonType": "object"
+          },
+          "use_stats": {
+            "bsonType": "object"
+          },
+          "forgotten": {
+            "bsonType": [
+              "object",
+              "null"
+            ],
+            "required": [
+              "by",
+              "at"
+            ],
+            "properties": {
+              "by": {
+                "bsonType": "string"
+              },
+              "at": {
+                "bsonType": "date"
+              },
+              "reason": {
+                "bsonType": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "created_at": {
+            "bsonType": "date"
+          },
+          "updated_at": {
+            "bsonType": "date"
+          }
+        }
+      }
+    },
+    {
+      "$expr": {
+        "$or": [
+          {
+            "$ne": [
+              "$status",
+              "forgotten"
+            ]
+          },
+          {
+            "$and": [
+              {
+                "$eq": [
+                  "$content",
+                  null
+                ]
+              },
+              {
+                "$eq": [
+                  "$embed_text",
+                  null
+                ]
+              },
+              {
+                "$eq": [
+                  "$entities",
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

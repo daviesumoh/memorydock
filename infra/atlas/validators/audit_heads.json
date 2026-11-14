@@ -1,0 +1,26 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "seq",
+      "hash"
+    ],
+    "properties": {
+      "_id": {
+        "bsonType": "string"
+      },
+      "seq": {
+        "bsonType": [
+          "long",
+          "int"
+        ],
+        "minimum": 0
+      },
+      "hash": {
+        "bsonType": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    }
+  }
+}

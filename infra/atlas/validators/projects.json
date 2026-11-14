@@ -1,0 +1,61 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "tenant_id",
+      "slug",
+      "name",
+      "repo_remotes",
+      "base_branch",
+      "members",
+      "maintainers",
+      "created_at",
+      "updated_at"
+    ],
+    "properties": {
+      "_id": {
+        "bsonType": "string",
+        "pattern": "^prj_"
+      },
+      "tenant_id": {
+        "bsonType": "string"
+      },
+      "slug": {
+        "bsonType": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+      },
+      "name": {
+        "bsonType": "string",
+        "maxLength": 200
+      },
+      "repo_remotes": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "string"
+        }
+      },
+      "base_branch": {
+        "bsonType": "string"
+      },
+      "members": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "string"
+        }
+      },
+      "maintainers": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "string"
+        }
+      },
+      "created_at": {
+        "bsonType": "date"
+      },
+      "updated_at": {
+        "bsonType": "date"
+      }
+    }
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "tenant_id",
+      "seq",
+      "ts",
+      "actor",
+      "action",
+      "resource",
+      "decision",
+      "prev_hash",
+      "hash"
+    ],
+    "properties": {
+      "_id": {
+        "bsonType": "string",
+        "pattern": "^aud_"
+      },
+      "tenant_id": {
+        "bsonType": "string"
+      },
+      "seq": {
+        "bsonType": [
+          "long",
+          "int"
+        ],
+        "minimum": 1
+      },
+      "ts": {
+        "bsonType": "date"
+      },
+      "actor": {
+        "bsonType": "object",
+        "required": [
+          "via"
+        ],
+        "properties": {
+          "via": {
+            "enum": [
+              "mcp",
+              "rest",
+              "hook",
+              "worker",
+              "console",
+              "webhook",
+              "system"
+            ]
+          }
+        }
+      },
+      "action": {
+        "bsonType": "string"
+      },
+      "resource": {
+        "bsonType": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "bsonType": "string"
+          },
+          "scope_keys": {
+            "bsonType": "array"
+          }
+        }
+      },
+      "decision": {
+        "bsonType": "object",
+        "required": [
+          "effect"
+        ],
+        "properties": {
+          "effect": {
+            "enum": [
+              "allow",
+              "deny",
+              "approval_required",
+              "n/a"
+            ]
+          },
+          "policy_version": {
+            "bsonType": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{12}$"
+          }
+        }
+      },
+      "prev_hash": {
+        "bsonType": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      },
+      "hash": {
+        "bsonType": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    }
+  }
+}

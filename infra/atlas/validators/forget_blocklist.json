@@ -1,0 +1,44 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "tenant_id",
+      "content_hash",
+      "memory_id",
+      "forgotten_by",
+      "forgotten_at",
+      "created_at",
+      "updated_at"
+    ],
+    "properties": {
+      "_id": {
+        "bsonType": "string",
+        "pattern": "^fbl_"
+      },
+      "tenant_id": {
+        "bsonType": "string"
+      },
+      "content_hash": {
+        "bsonType": "string",
+        "pattern": "^sha256:[a-f0-9]{64}$"
+      },
+      "memory_id": {
+        "bsonType": "string",
+        "pattern": "^mem_"
+      },
+      "forgotten_by": {
+        "bsonType": "string"
+      },
+      "forgotten_at": {
+        "bsonType": "date"
+      },
+      "created_at": {
+        "bsonType": "date"
+      },
+      "updated_at": {
+        "bsonType": "date"
+      }
+    }
+  }
+}
