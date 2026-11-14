@@ -63,7 +63,7 @@ describe("audit list", () => {
   });
 
   it("shows an empty state when nothing matches", async () => {
-    searchParams = new URLSearchParams("task_id=tsk_none");
+    searchParams = new URLSearchParams("action=task.cancel");
     renderWithQueries(<AuditList />);
     expect(await screen.findByText("No entries match these filters")).toBeTruthy();
   });

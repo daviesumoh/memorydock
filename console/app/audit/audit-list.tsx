@@ -10,12 +10,11 @@ import type { Schemas } from "@/lib/api/client";
 import { useAudit } from "@/lib/api/queries";
 import { formatTimestamp } from "@/lib/format";
 
+// Only the filters GET /v1/audit accepts.
 const AUDIT_FILTERS = [
   { name: "action", label: "Action", kind: "text", placeholder: "memory.forget" },
-  { name: "user_id", label: "User", kind: "text" },
   { name: "session_id", label: "Session", kind: "text" },
   { name: "resource_id", label: "Resource", kind: "text" },
-  { name: "task_id", label: "Task", kind: "text" },
 ] as const satisfies readonly FilterField[];
 
 function actorText(actor: Schemas["AuditActor"]): string {
@@ -24,8 +23,7 @@ function actorText(actor: Schemas["AuditActor"]): string {
 }
 
 function resourceText(resource: Schemas["AuditResource"]): string {
-  const label = resource.path ?? resource.id;
-  return label ? `${resource.type} ${label}` : resource.type;
+  return resource.id ? `${resource.type} ${resource.id}` : resource.type;
 }
 
 export function AuditList() {
@@ -70,10 +68,10 @@ export function AuditList() {
                 const time = (
                   <TruncatedCell fullText={formatTimestamp(entry.ts)}>{formatTimestamp(entry.ts)}</TruncatedCell>
                 );
-                if (entry.action === "personal_activity") {
+                if (entry.personal_placeholder) {
                   // Another user's personal-scope activity: the gateway sends no ids.
                   return (
-                    <TableRow key={entry.id}>
+                    <TableRow key={entry.seq}>
                       {seq}
                       {time}
                       <TableCell colSpan={5} className="text-muted-foreground align-top italic">
@@ -85,7 +83,7 @@ export function AuditList() {
                 const memoryId = entry.resource.type === "memory" ? entry.resource.id : null;
                 const policies = entry.decision.policy_ids.join(", ") || "None";
                 return (
-                  <TableRow key={entry.id}>
+                  <TableRow key={entry.seq}>
                     {seq}
                     {time}
                     <TruncatedCell fullText={entry.action} className="font-mono text-xs">

@@ -1,0 +1,68 @@
+namespace Memorydock {
+  entity Org = { killSwitch: Bool };
+  entity Team in [Org];
+  entity User in [Team, Org] = {
+    readableScopes: Set<String>,
+    writableScopes: Set<String>,
+    isOrgAdmin: Bool,
+  };
+  entity Project in [Org] = { scope: String, maintainers: Set<User>, members: Set<User> };
+  entity AgentSession = { user: User, client: String, status: String, org: Org };
+
+  // Scope and category caps are compared as ranks: user 0, project 1, team 2, org 3.
+  entity Memory = {
+    scopeKey: String,
+    scopeLevel: String,
+    scopeRank: Long,
+    status: String,
+    assertedBy: String,
+    ownerUser: User,
+    categoryMaxRank: Long,
+    confined: Bool,
+  };
+  entity ReviewItem = { ownerUser: User };
+  entity RepoPath = { project: Project, path: String, leaseConflict: Bool };
+  entity Lease = { project: Project, holderUser: User, resourceKind: String };
+  entity Approval = { requesterUser: User, approvers: Set<User>, org: Org };
+  entity Task = { project: Project, owner: User };
+  entity ExternalTarget = { system: String, kind: String, project: Project, isProtected: Bool };
+  entity AuditView = { org: Org };
+
+  action ReadActions, WriteActions, ExternalActions;
+
+  action "memory.read" in [ReadActions]
+    appliesTo { principal: [AgentSession], resource: [Memory] };
+  action "memory.write", "memory.correct", "memory.flag", "memory.forget", "memory.share" in [WriteActions]
+    appliesTo {
+      principal: [AgentSession],
+      resource: [Memory],
+      context: { reason?: String, targetLevel?: String, targetRank?: Long, targetScopeKey?: String },
+    };
+  action "turn.capture" in [WriteActions]
+    appliesTo { principal: [AgentSession], resource: [AgentSession] };
+  action "review.read" in [ReadActions]
+    appliesTo { principal: [AgentSession], resource: [ReviewItem] };
+  action "review.decide" in [WriteActions]
+    appliesTo { principal: [AgentSession], resource: [ReviewItem] };
+  action "file.edit", "bash.exec" in [WriteActions]
+    appliesTo { principal: [AgentSession], resource: [RepoPath] };
+  action "lease.read" in [ReadActions]
+    appliesTo { principal: [AgentSession], resource: [Lease] };
+  action "lease.acquire", "lease.release", "lease.request", "lease.override" in [WriteActions]
+    appliesTo { principal: [AgentSession], resource: [Lease] };
+  action "approval.read" in [ReadActions]
+    appliesTo { principal: [AgentSession], resource: [Approval] };
+  action "approval.decide" in [WriteActions]
+    appliesTo { principal: [AgentSession], resource: [Approval] };
+  action "task.read" in [ReadActions]
+    appliesTo { principal: [AgentSession], resource: [Task] };
+  action "task.create", "task.claim", "task.update", "task.handoff", "task.cancel", "task.rollback" in [WriteActions]
+    appliesTo { principal: [AgentSession], resource: [Task] };
+  action "github.create_branch", "github.open_pr", "github.add_label", "github.comment_pr", "github.merge_pr"
+    in [ExternalActions, WriteActions]
+    appliesTo { principal: [AgentSession], resource: [ExternalTarget] };
+  action "audit.read", "audit.verify", "policy.read" in [ReadActions]
+    appliesTo { principal: [AgentSession], resource: [AuditView] };
+  action "session.pause", "session.resume", "session.revoke" in [WriteActions]
+    appliesTo { principal: [AgentSession], resource: [AgentSession] };
+}

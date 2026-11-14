@@ -1,6 +1,6 @@
-.PHONY: setup hooks lint scan privacy test check-env atlas-setup atlas-roles verify-preview test-integration
+.PHONY: setup hooks lint scan privacy test openapi gateway check-env atlas-setup atlas-roles verify-preview test-integration
 
-PY_SOURCES := packages scripts tests
+PY_SOURCES := packages services scripts tests
 # deptry runs per package directory so each package is checked against its own dependencies.
 DEPTRY_DIRS := $(dir $(wildcard packages/*/pyproject.toml services/*/pyproject.toml clients/cli/pyproject.toml))
 
@@ -17,7 +17,7 @@ lint:
 
 scan:
 	uv run python scripts/scan_secrets.py
-	uv run vulture $(PY_SOURCES) --min-confidence 80
+	uv run vulture $(PY_SOURCES) vulture_allowlist.py --min-confidence 80
 	@for d in $(DEPTRY_DIRS); do (cd $$d && uv run deptry .) || exit 1; done
 
 privacy:
@@ -25,6 +25,15 @@ privacy:
 
 test:
 	uv run pytest tests/unit
+
+# Regenerates the API spec and the console types built from it; commit both.
+openapi:
+	uv run python scripts/export_openapi.py
+	cd console && pnpm gen:api
+
+# Local gateway on 127.0.0.1:8000 with reload; run it in your own terminal.
+gateway:
+	uv run uvicorn --factory memorydock_gateway.app:create_app --host 127.0.0.1 --port 8000 --reload
 
 check-env:
 	uv run python scripts/check_env.py

@@ -40,12 +40,19 @@ function VersionHistory({ memoryId }: { memoryId: string }) {
     <>
       <ol className="flex flex-col gap-3">
         {versions.map((version) => (
-          <li key={version.version} className="rounded-md border p-3">
-            <div className="mb-1 flex items-center gap-2 text-sm">
+          <li key={version.id} className="rounded-md border p-3">
+            <div className="mb-1 flex flex-wrap items-center gap-2 text-sm">
               <span className="font-medium">Version {version.version}</span>
               <StatusBadge status={version.status} />
-              <span className="text-muted-foreground">{formatTimestamp(version.created_at)} UTC</span>
+              <span className="text-muted-foreground">
+                {version.change.kind} by <span className="font-mono text-xs">{version.change.by}</span>,{" "}
+                {formatTimestamp(version.created_at)} UTC
+              </span>
             </div>
+            {/* Free text from whoever made the change: shown as text. */}
+            {version.change.reason ? (
+              <p className="text-muted-foreground mb-1 text-sm">Reason: {version.change.reason}</p>
+            ) : null}
             <p className="text-sm whitespace-pre-wrap">
               {version.content ?? <span className="text-muted-foreground italic">Content forgotten</span>}
             </p>
@@ -95,14 +102,6 @@ export function MemoryDetail({ memoryId }: { memoryId: string }) {
           // Agent-written text: rendered as text, never as HTML.
           <p className="text-lg whitespace-pre-wrap">{memory.content}</p>
         )}
-        {memory.instruction_like ? (
-          <Alert variant="destructive">
-            <AlertTitle>Reads like an instruction</AlertTitle>
-            <AlertDescription>
-              The gate flagged this memory as instruction-like. Agents receive it as quoted data, never as a command.
-            </AlertDescription>
-          </Alert>
-        ) : null}
       </header>
 
       <dl className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -126,7 +125,7 @@ export function MemoryDetail({ memoryId }: { memoryId: string }) {
         </Field>
       </dl>
 
-      {memory.supersedes || memory.superseded_by || memory.conflicts_with.length > 0 ? (
+      {memory.supersedes || memory.superseded_by ? (
         <section className="flex flex-col gap-2">
           <h2 className="font-semibold">Related memories</h2>
           <ul className="flex flex-col gap-1 text-sm">
@@ -140,11 +139,6 @@ export function MemoryDetail({ memoryId }: { memoryId: string }) {
                 Replaced by <MemoryLink id={memory.superseded_by} />
               </li>
             ) : null}
-            {memory.conflicts_with.map((id) => (
-              <li key={id}>
-                Conflicts with <MemoryLink id={id} />
-              </li>
-            ))}
           </ul>
         </section>
       ) : null}

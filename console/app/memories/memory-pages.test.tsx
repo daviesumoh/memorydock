@@ -74,7 +74,8 @@ describe("memory list", () => {
   });
 
   it("shows a filtered empty state that says the filters are the reason", async () => {
-    searchParams = new URLSearchParams("category=nothing-matches");
+    // No fixture is proposed, so this filter matches nothing.
+    searchParams = new URLSearchParams("status=proposed");
     renderWithQueries(<MemoryList />);
     expect(await screen.findByText("No memories match these filters")).toBeTruthy();
   });
@@ -105,17 +106,13 @@ describe("memory detail", () => {
     expect(screen.getByText("95%")).toBeTruthy();
     expect(await screen.findByText("Version 2")).toBeTruthy();
     expect(screen.getByText("Version 1")).toBeTruthy();
+    expect(screen.getByText("Reason: Added when the notes are generated")).toBeTruthy();
   });
 
   it("explains a forgotten memory and shows no content", async () => {
     renderWithQueries(<MemoryDetail memoryId="mem_01JDEMO0009" />);
     expect(await screen.findByText(/Content and search data were purged/)).toBeTruthy();
     expect(screen.getByText(/Captured by mistake/)).toBeTruthy();
-  });
-
-  it("warns when the gate marked the memory instruction-like", async () => {
-    renderWithQueries(<MemoryDetail memoryId="mem_01JDEMO0008" />);
-    expect(await screen.findByText("Reads like an instruction")).toBeTruthy();
   });
 
   it("treats a 404 as not found, not as a failure", async () => {

@@ -2,16 +2,20 @@ import { http, HttpResponse } from "msw";
 
 import type { Schemas } from "@/lib/api/client";
 
-import { auditEntries, memories, memoryVersions } from "./fixtures";
+import { auditEntries, memories, memoryVersions, ROSA } from "./fixtures";
 import { paginate, type PageResult } from "./paging";
 
 // Fictional demo data only. These stand in for gateway routes that are still
 // 501 stubs; each handler is removed once its real route lands.
 export const fixtures = {
   me: {
-    user_id: "usr_01JDEMO0ROSA",
+    user_id: ROSA,
     email: "rosa@example.com",
-    org_id: "org_acme",
+    org_id: "halcyon",
+    display_name: "Rosa",
+    roles: ["member"],
+    teams: ["product"],
+    projects: [{ slug: "lantern", name: "Project Lantern", maintainer: true }],
   },
 } satisfies { me: Schemas["Me"] };
 
@@ -24,7 +28,7 @@ let requestCounter = 0;
 function errorResponse(status: number, code: string, message: string) {
   const requestId = `req_mock_${++requestCounter}`;
   return HttpResponse.json(
-    { error: { code, message, request_id: requestId } } satisfies Schemas["ErrorResponse"],
+    { error: { code, message, request_id: requestId, field: null } } satisfies Schemas["ErrorResponse"],
     { status, headers: { "x-request-id": requestId } },
   );
 }
@@ -38,22 +42,16 @@ function pageResponse<T>(page: PageResult<T>) {
   return HttpResponse.json(page);
 }
 
-const memoryFilters: Record<string, (memory: Schemas["Memory"], value: string) => boolean> = {
-  scope: (m, v) => m.scope_key === v,
-  type: (m, v) => m.type === v,
+// Only the filters the contract defines for each route.
+const memoryFilters: Record<string, (memory: Schemas["MemoryOut"], value: string) => boolean> = {
   status: (m, v) => m.status === v,
-  category: (m, v) => m.category === v,
-  source_client: (m, v) => m.source_client === v,
-  project: (m, v) => m.scope_key === `project:acme/${v}`,
+  type: (m, v) => m.type === v,
 };
 
-const auditFilters: Record<string, (entry: Schemas["AuditEntry"], value: string) => boolean> = {
-  session_id: (e, v) => e.actor.session_id === v,
-  user_id: (e, v) => e.actor.user_id === v,
-  resource_id: (e, v) => e.resource.id === v,
+const auditFilters: Record<string, (entry: Schemas["AuditEntryOut"], value: string) => boolean> = {
   action: (e, v) => e.action === v,
-  // Fixtures carry no task ids, so a task filter matches nothing.
-  task_id: () => false,
+  session_id: (e, v) => e.actor.session_id === v,
+  resource_id: (e, v) => e.resource.id === v,
 };
 
 function applyFilters<T>(items: T[], filters: Record<string, (item: T, value: string) => boolean>, params: URLSearchParams) {
@@ -66,18 +64,12 @@ function applyFilters<T>(items: T[], filters: Record<string, (item: T, value: st
   );
 }
 
-function toSummary(memory: Schemas["Memory"]): Schemas["MemorySummary"] {
-  const { id, scope_key, scope_level, type, status, category, content, source_client, trust, version, expires_at, created_at, updated_at } = memory;
-  return { id, scope_key, scope_level, type, status, category, content, source_client, trust, version, expires_at, created_at, updated_at };
-}
-
 export const handlers = [
   http.get(gatewayPath("/v1/me"), () => HttpResponse.json(fixtures.me)),
 
   http.get(gatewayPath("/v1/memories"), ({ request }) => {
     const params = new URL(request.url).searchParams;
-    const matching = applyFilters(memories, memoryFilters, params).map(toSummary);
-    return pageResponse(paginate(matching, (m) => m.id, params));
+    return pageResponse(paginate(applyFilters(memories, memoryFilters, params), (m) => m.id, params));
   }),
 
   http.get(gatewayPath("/v1/memories/:id"), ({ params }) => {
@@ -88,14 +80,25 @@ export const handlers = [
   http.get(gatewayPath("/v1/memories/:id/versions"), ({ request, params }) => {
     const found = memories.find((m) => m.id === params.id);
     if (!found) return errorResponse(404, "not_found", "No such memory");
-    const versions = memoryVersions[found.id] ?? [
-      { version: found.version, status: found.status, type: found.type, scope_key: found.scope_key, content: found.content, created_at: found.updated_at },
+    const versions: Schemas["MemoryVersionOut"][] = memoryVersions[found.id] ?? [
+      {
+        id: `memv_${found.id.slice(4)}`,
+        memory_id: found.id,
+        version: found.version,
+        scope_key: found.scope_key,
+        status: found.status,
+        type: found.type,
+        content: found.content,
+        change: { kind: "create", by: found.provenance.actor_user, reason: null },
+        created_at: found.created_at,
+      },
     ];
-    return pageResponse(paginate(versions, (v) => String(v.version), new URL(request.url).searchParams));
+    return pageResponse(paginate(versions, (v) => v.id, new URL(request.url).searchParams));
   }),
 
   http.get(gatewayPath("/v1/audit"), ({ request }) => {
     const params = new URL(request.url).searchParams;
-    return pageResponse(paginate(applyFilters(auditEntries, auditFilters, params), (e) => e.id, params));
+    // Placeholder entries carry no id, so paging keys on seq.
+    return pageResponse(paginate(applyFilters(auditEntries, auditFilters, params), (e) => `seq_${e.seq}`, params));
   }),
 ];

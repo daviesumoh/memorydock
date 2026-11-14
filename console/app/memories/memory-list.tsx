@@ -9,8 +9,8 @@ import { EmptyState, ErrorState, LoadingRows } from "@/components/view-states";
 import { useMemories } from "@/lib/api/queries";
 import { formatTimestamp } from "@/lib/format";
 
+// Only the filters GET /v1/memories accepts.
 export const MEMORY_FILTERS = [
-  { name: "scope", label: "Scope", kind: "text", placeholder: "project:acme/lantern" },
   {
     name: "type",
     label: "Type",
@@ -23,14 +23,6 @@ export const MEMORY_FILTERS = [
     kind: "select",
     options: ["active", "proposed", "superseded", "conflict", "disputed", "expired", "forgotten"],
   },
-  { name: "category", label: "Category", kind: "text" },
-  {
-    name: "source_client",
-    label: "Source client",
-    kind: "select",
-    options: ["claude-code", "codex", "claude-app", "chatgpt", "console", "worker", "other"],
-  },
-  { name: "project", label: "Project", kind: "text", placeholder: "lantern" },
 ] as const satisfies readonly FilterField[];
 
 export function MemoryList() {
@@ -86,7 +78,7 @@ export function MemoryList() {
                   <TruncatedCell fullText={memory.scope_key} className="font-mono text-xs">
                     {memory.scope_key}
                   </TruncatedCell>
-                  <TruncatedCell fullText={memory.source_client}>{memory.source_client}</TruncatedCell>
+                  <TruncatedCell fullText={memory.provenance.source_client}>{memory.provenance.source_client}</TruncatedCell>
                   <TruncatedCell fullText={formatTimestamp(memory.updated_at)}>
                     {formatTimestamp(memory.updated_at)}
                   </TruncatedCell>
