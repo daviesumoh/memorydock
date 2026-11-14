@@ -36,7 +36,7 @@ def test_healthz(client):
 
 @pytest.mark.parametrize(
     "path",
-    ["/v1/me", "/v1/memories", f"/v1/memories/{new_id('mem')}",
+    ["/v1/memories", f"/v1/memories/{new_id('mem')}",
      f"/v1/memories/{new_id('mem')}/versions", "/v1/audit"],
 )  # fmt: skip
 def test_stubs_answer_501_in_the_error_shape(client, path):
