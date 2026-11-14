@@ -234,3 +234,40 @@ export const auditEntries: AuditEntry[] = [
   }),
   ...Array.from({ length: 7 }, (_, i) => auditEntry(7 - i, {})),
 ];
+
+export const CONSOLE_SESSION = "ses_01JDEMO0C0";
+
+export const sessions: Schemas["SessionOut"][] = [
+  {
+    id: CONSOLE_SESSION,
+    user_id: ROSA,
+    client: "console",
+    status: "active",
+    started_at: "2026-11-14T09:00:00Z",
+    last_seen_at: "2026-11-14T12:00:00Z",
+  },
+  {
+    id: "ses_01JDEMO0A1",
+    user_id: ROSA,
+    client: "claude-code",
+    status: "active",
+    started_at: "2026-11-14T09:05:00Z",
+    last_seen_at: "2026-11-14T11:58:00Z",
+  },
+  {
+    id: "ses_01JDEMO0C3",
+    user_id: MALIK,
+    client: "codex",
+    status: "paused",
+    started_at: "2026-11-14T08:30:00Z",
+    last_seen_at: "2026-11-14T10:15:00Z",
+  },
+  {
+    id: "ses_01JDEMO0D4",
+    user_id: MALIK,
+    client: "claude-app",
+    status: "revoked",
+    started_at: "2026-11-13T15:00:00Z",
+    last_seen_at: "2026-11-13T16:40:00Z",
+  },
+];

@@ -106,3 +106,30 @@ export function useVerifyAudit() {
     mutationFn: async () => unwrap(await gateway.GET("/v1/audit/verify")),
   });
 }
+
+export function useSessions() {
+  return useQuery({
+    queryKey: ["sessions"],
+    queryFn: async ({ signal }) => unwrap(await gateway.GET("/v1/sessions", { signal })),
+  });
+}
+
+export type SessionAction = "pause" | "resume" | "revoke";
+
+export function useSetSessionStatus() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, action, reason }: { id: string; action: SessionAction; reason?: string | null }) => {
+      const params = { path: { session_id: id } };
+      if (action === "revoke") {
+        return unwrap(await gateway.POST("/v1/sessions/{session_id}/revoke", { params, body: { reason: reason ?? null } }));
+      }
+      const path = action === "pause" ? "/v1/sessions/{session_id}/pause" : "/v1/sessions/{session_id}/resume";
+      return unwrap(await gateway.POST(path, { params }));
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["sessions"] });
+      void client.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+}

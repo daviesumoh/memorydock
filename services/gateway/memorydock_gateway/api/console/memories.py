@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Path, Response
-from memorydock_core.audit.chain import truncate_ms
 from memorydock_core.errors import Forbidden, NotFound
 from memorydock_core.ids import id_pattern
 from memorydock_core.memory import service as memory_service
@@ -22,11 +20,10 @@ from memorydock_core.models.memory import (
 from memorydock_core.ops import Op
 from memorydock_core.paging import MAX_LIMIT, decode_cursor, encode_cursor
 from memorydock_core.policy.pdp import Decision
-from memorydock_core.principal import Principal
 from memorydock_core.repo import memories as memories_repo
 from pydantic import Field
 
-from memorydock_gateway import state
+from memorydock_gateway.api.ops import console_op
 from memorydock_gateway.api.params import DEFAULT_PAGE, Cursor, Limit
 from memorydock_gateway.auth import CurrentPrincipal
 from memorydock_gateway.errors import ERROR_RESPONSES
@@ -56,18 +53,6 @@ class MemoryCreate(ApiModel):
 class ForgetRequest(ApiModel):
     reason: Annotated[str | None, Field(max_length=500)] = Field(
         default=None, description="Required by policy for memories outside the user's own scope"
-    )
-
-
-def _op(p: Principal) -> Op:
-    runtime = state.current()
-    return Op(
-        client=runtime.client,
-        db=runtime.db,
-        pdp=runtime.policy.pdp,
-        principal=p,
-        via="console",
-        now=truncate_ms(datetime.now(UTC)),
     )
 
 
@@ -101,7 +86,7 @@ async def list_memories(
     status: MemoryStatus | None = None,
     type: MemoryType | None = None,
 ) -> MemoryPage:
-    op = _op(p)
+    op = console_op(p)
     last = str(decode_cursor(cursor, pattern=id_pattern("mem"))) if cursor else None
     items: list[MemoryOut] = []
     scanned = 0
@@ -126,7 +111,7 @@ async def list_memories(
 
 @router.get("/memories/{memory_id}", operation_id="get_memory", summary="One memory")
 async def get_memory(p: CurrentPrincipal, memory_id: str = MemoryId) -> MemoryOut:
-    return memory_out(await _readable_memory(_op(p), memory_id))
+    return memory_out(await _readable_memory(console_op(p), memory_id))
 
 
 @router.get(
@@ -140,7 +125,7 @@ async def list_memory_versions(
     limit: Limit = DEFAULT_PAGE,
     cursor: Cursor = None,
 ) -> MemoryVersionPage:
-    op = _op(p)
+    op = console_op(p)
     before = int(decode_cursor(cursor, integer=True)) if cursor else None
     await _readable_memory(op, memory_id)
     docs = await memories_repo.versions_before(
@@ -219,7 +204,7 @@ def version_out(doc: dict[str, Any]) -> MemoryVersionOut:
     status_code=201,
 )
 async def create_memory(p: CurrentPrincipal, body: MemoryCreate, response: Response) -> MemoryOut:
-    op = _op(p)
+    op = console_op(p)
     saved = await memory_service.remember(
         op,
         content=body.content,
@@ -242,6 +227,6 @@ async def create_memory(p: CurrentPrincipal, body: MemoryCreate, response: Respo
 async def forget_memory(
     p: CurrentPrincipal, body: ForgetRequest, memory_id: str = MemoryId
 ) -> MemoryOut:
-    op = _op(p)
+    op = console_op(p)
     await memory_service.forget(op, memory_id=memory_id, reason=body.reason)
     return memory_out(await _readable_memory(op, memory_id))
