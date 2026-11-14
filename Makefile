@@ -1,4 +1,4 @@
-.PHONY: setup hooks lint scan privacy test openapi gateway deploy check-env policy-dev atlas-setup atlas-roles verify-preview test-integration
+.PHONY: setup hooks lint scan privacy test openapi gateway deploy demo-seed check-env policy-dev atlas-setup atlas-roles verify-preview test-integration
 
 PY_SOURCES := packages services scripts tests
 # deptry runs per package directory so each package is checked against its own dependencies.
@@ -34,6 +34,10 @@ openapi:
 # Local gateway on 127.0.0.1:8000 with reload; run it in your own terminal.
 gateway:
 	uv run uvicorn --factory memorydock_gateway.app:create_app --host 127.0.0.1 --port 8000 --reload
+
+# Seeds the demo orgs and users: make demo-seed DB=<db> REPO=<remote> ROSA=<email> THEO=<email> WREN=<email>
+demo-seed:
+	uv run python scripts/demo_seed.py --db $(DB) --repo $(REPO) --rosa $(ROSA) --theo $(THEO) --wren $(WREN)
 
 # Deploys the gateway to Fly from a clean checkout; prints /readyz when it is up.
 deploy:
