@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 SHARED_DB = "memorydock"
@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     workos_client_id: str = ""
     workos_api_key: SecretStr | None = None
     identity_cache_seconds: int = 15
+    recall_token_budget: int = Field(default=1500, ge=100, le=20000)
 
     @model_validator(mode="after")
     def _database_matches_env(self) -> Settings:

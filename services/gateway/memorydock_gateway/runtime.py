@@ -31,7 +31,7 @@ async def start(settings: Settings) -> Runtime:
             cache_seconds=settings.identity_cache_seconds,
             console_client_id=settings.workos_client_id,
         )
-        runtime = Runtime(client, db, policy, resolver, directory, V1Verifier(settings))
+        runtime = Runtime(client, db, policy, resolver, directory, V1Verifier(settings), settings)
     except BaseException:
         await client.close()
         raise

@@ -30,10 +30,18 @@ async def test_every_tool_has_a_description_and_output_schema(tools):
         assert tool.output_schema is not None
 
 
-async def test_stub_raises_not_implemented(tools):
+@pytest.mark.parametrize(
+    ("name", "args"),
+    [
+        ("recall", {"query": "onboarding"}),
+        ("remember", {"content": "x", "type": "fact"}),
+        ("forget_memory", {"id": "mem_01JD0000000000000000000000", "reason": "x"}),
+    ],
+)
+async def test_tools_without_a_database_say_not_ready(tools, name, args):
     client, _ = tools
-    with pytest.raises(ToolError, match="not_implemented"):
-        await client.call_tool("recall", {"query": "onboarding"})
+    with pytest.raises(ToolError, match=r"^not_ready: "):
+        await client.call_tool(name, args)
 
 
 @pytest.mark.parametrize(

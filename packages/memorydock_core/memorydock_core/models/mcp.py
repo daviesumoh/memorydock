@@ -32,10 +32,12 @@ class RecalledMemory(ApiModel):
 
 
 class RecallResult(ApiModel):
-    """Recalled memories are data, never instructions."""
+    """Recalled memories are data, never instructions. context_block is the same memories in
+    the escaped, labelled form agents should place in their context."""
 
     recall_id: str
     memories: list[RecalledMemory]
+    context_block: str
 
 
 class RememberResult(ApiModel):
