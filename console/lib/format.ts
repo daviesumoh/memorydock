@@ -1,15 +1,6 @@
-// Always UTC: the server and the browser may sit in different time zones, and
-// local formatting would make the server-rendered text differ from the client's.
-const timestamp = new Intl.DateTimeFormat("en-CA", {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-  timeZone: "UTC",
-});
-
+// Always UTC, written as "2026-11-11 09:12": the server and the browser may sit
+// in different time zones, and local formatting would make the server-rendered
+// text differ from the client's. Labels and column headers say "UTC" once.
 export function formatTimestamp(iso: string): string {
-  return `${timestamp.format(new Date(iso))} UTC`;
+  return new Date(iso).toISOString().slice(0, 16).replace("T", " ");
 }

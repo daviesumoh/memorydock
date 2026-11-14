@@ -44,7 +44,7 @@ function VersionHistory({ memoryId }: { memoryId: string }) {
             <div className="mb-1 flex items-center gap-2 text-sm">
               <span className="font-medium">Version {version.version}</span>
               <StatusBadge status={version.status} />
-              <span className="text-muted-foreground">{formatTimestamp(version.created_at)}</span>
+              <span className="text-muted-foreground">{formatTimestamp(version.created_at)} UTC</span>
             </div>
             <p className="text-sm whitespace-pre-wrap">
               {version.content ?? <span className="text-muted-foreground italic">Content forgotten</span>}
@@ -85,7 +85,7 @@ export function MemoryDetail({ memoryId }: { memoryId: string }) {
         </div>
         {memory.forgotten ? (
           <Alert>
-            <AlertTitle>Forgotten {formatTimestamp(memory.forgotten.at)}</AlertTitle>
+            <AlertTitle>Forgotten {formatTimestamp(memory.forgotten.at)} UTC</AlertTitle>
             <AlertDescription>
               Content and search data were purged; only this record remains.
               {memory.forgotten.reason ? ` Reason: ${memory.forgotten.reason}` : null}
@@ -111,11 +111,11 @@ export function MemoryDetail({ memoryId }: { memoryId: string }) {
         </Field>
         <Field label="Category">{memory.category ?? "None"}</Field>
         <Field label="Version">{memory.version}</Field>
-        <Field label="Updated">{formatTimestamp(memory.updated_at)}</Field>
+        <Field label="Updated (UTC)">{formatTimestamp(memory.updated_at)}</Field>
         <Field label="Asserted by">{memory.trust.asserted_by.replace("_", " ")}</Field>
         <Field label="Confidence">{Math.round(memory.trust.confidence * 100)}%</Field>
         <Field label="Flags">{memory.trust.flags}</Field>
-        <Field label="Expires">{memory.expires_at ? formatTimestamp(memory.expires_at) : "Never"}</Field>
+        <Field label="Expires (UTC)">{memory.expires_at ? formatTimestamp(memory.expires_at) : "Never"}</Field>
         <Field label="Source client">{memory.provenance.source_client}</Field>
         <Field label="Captured by">{memory.provenance.captured_by}</Field>
         <Field label="Actor">

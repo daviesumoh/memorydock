@@ -62,7 +62,7 @@ export function MemoryList() {
                 <TableHead>Status</TableHead>
                 <TableHead>Scope</TableHead>
                 <TableHead>Source</TableHead>
-                <TableHead>Updated</TableHead>
+                <TableHead>Updated (UTC)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

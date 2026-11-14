@@ -72,7 +72,7 @@ export function AuditList() {
             <TableHeader>
               <TableRow>
                 <TableHead>Seq</TableHead>
-                <TableHead>Time</TableHead>
+                <TableHead>Time (UTC)</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Actor</TableHead>
                 <TableHead>Resource</TableHead>
