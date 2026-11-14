@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from memorydock_core.config import Settings
+from memorydock_core.distill.service import Extractor
 from memorydock_core.errors import DomainError
 from memorydock_core.identity.directory import WorkOSDirectory
 from memorydock_core.identity.resolver import IdentityResolver
@@ -35,6 +36,7 @@ class Runtime:
     directory: WorkOSDirectory
     v1_verifier: V1Verifier
     settings: Settings
+    distill: Extractor | None = None
     tasks: list[asyncio.Task[None]] = field(default_factory=list)
 
 

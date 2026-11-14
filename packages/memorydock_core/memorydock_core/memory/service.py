@@ -22,7 +22,7 @@ from memorydock_core.repo import memories as repo
 from memorydock_core.scope import org_scope, project_scope, team_scope, user_scope
 from memorydock_core.txn import run_transaction
 
-CapturedBy = Literal["mcp_tool", "console"]
+CapturedBy = Literal["mcp_tool", "console", "distiller"]
 MAX_ENTITIES = 20
 
 
