@@ -1,4 +1,4 @@
-.PHONY: setup hooks lint scan privacy test check-env
+.PHONY: setup hooks lint scan privacy test check-env atlas-setup test-integration
 
 PY_SOURCES := packages scripts tests
 # deptry runs per package directory so each package is checked against its own dependencies.
@@ -28,3 +28,10 @@ test:
 
 check-env:
 	uv run python scripts/check_env.py
+
+atlas-setup:
+	uv run python -u scripts/atlas_setup.py --wait
+
+# Needs MONGODB_URI_ADMIN; each run creates and drops its own memorydock_test_<random> database.
+test-integration:
+	uv run pytest tests/integration
