@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { parseConfig } from "./config.ts";
 import { buildManifest, extensionIdFromPublicKey } from "./manifest.ts";
 
-const pem = readFileSync(new URL("../extension-key.pub.pem", import.meta.url), "utf8");
+const pem = readFileSync(new URL("../extension-key.pub", import.meta.url), "utf8");
 const spkiDer = createPublicKey(pem).export({ type: "spki", format: "der" });
 
 const config = parseConfig({

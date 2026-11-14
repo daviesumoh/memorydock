@@ -12,7 +12,7 @@ The manifest asks only for `storage` and `identity`, with host access to `https:
 
 ## Extension id
 
-`extension-key.pub.pem` is put in the manifest's `key`, which fixes the id at `ohlflggckmdbbaooockgncafhecpjboc` for every build and every machine. Its sign-in redirect will be `https://ohlflggckmdbbaooockgncafhecpjboc.chromiumapp.org/`.
+`extension-key.pub` is put in the manifest's `key`, which fixes the id at `ohlflggckmdbbaooockgncafhecpjboc` for every build and every machine. Its sign-in redirect will be `https://ohlflggckmdbbaooockgncafhecpjboc.chromiumapp.org/`.
 
 The private key is needed only to pack the extension for the Chrome Web Store. It is not in the repository.
 

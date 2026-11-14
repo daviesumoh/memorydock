@@ -15,7 +15,7 @@ const dist = `${root}dist`;
 if (existsSync(`${root}.env.local`)) process.loadEnvFile(`${root}.env.local`);
 const config = parseConfig(process.env);
 
-const pem = await readFile(`${root}extension-key.pub.pem`, "utf8");
+const pem = await readFile(`${root}extension-key.pub`, "utf8");
 const spkiDer = createPublicKey(pem).export({ type: "spki", format: "der" });
 const { version } = JSON.parse(await readFile(`${root}package.json`, "utf8")) as { version: string };
 
