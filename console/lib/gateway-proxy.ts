@@ -46,8 +46,9 @@ export interface ForwardOptions {
 }
 
 function errorResponse(status: number, code: ProxyErrorCode, message: string, requestId: string) {
+  // Same shape as the gateway's own errors, so the UI handles both one way.
   return Response.json(
-    { code, message, request_id: requestId },
+    { error: { code, message, request_id: requestId } },
     { status, headers: { ...HARDENING_HEADERS, "cache-control": "no-store", "x-request-id": requestId } },
   );
 }
