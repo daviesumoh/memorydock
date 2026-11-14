@@ -1,6 +1,6 @@
-.PHONY: setup hooks lint scan privacy test
+.PHONY: setup hooks lint scan privacy test check-env
 
-PY_SOURCES := scripts tests
+PY_SOURCES := packages scripts tests
 # deptry runs per package directory so each package is checked against its own dependencies.
 DEPTRY_DIRS := $(dir $(wildcard packages/*/pyproject.toml services/*/pyproject.toml clients/cli/pyproject.toml))
 
@@ -18,10 +18,13 @@ lint:
 scan:
 	uv run python scripts/scan_secrets.py
 	uv run vulture $(PY_SOURCES) --min-confidence 80
-	@for d in $(DEPTRY_DIRS); do uv run deptry $$d || exit 1; done
+	@for d in $(DEPTRY_DIRS); do (cd $$d && uv run deptry .) || exit 1; done
 
 privacy:
 	uv run python scripts/privacy_check.py
 
 test:
 	uv run pytest tests/unit
+
+check-env:
+	uv run python scripts/check_env.py
