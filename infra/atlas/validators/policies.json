@@ -1,0 +1,77 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "scope",
+      "kind",
+      "schema_text",
+      "authz_text",
+      "approvals_text",
+      "version",
+      "content_hash",
+      "published_by",
+      "published_at",
+      "validation"
+    ],
+    "properties": {
+      "_id": {
+        "bsonType": "string",
+        "pattern": "^pol_"
+      },
+      "scope": {
+        "enum": [
+          "global"
+        ]
+      },
+      "kind": {
+        "enum": [
+          "bundle"
+        ]
+      },
+      "schema_text": {
+        "bsonType": "string"
+      },
+      "authz_text": {
+        "bsonType": "string"
+      },
+      "approvals_text": {
+        "bsonType": "string"
+      },
+      "version": {
+        "bsonType": "string",
+        "pattern": "^[a-f0-9]{12}$"
+      },
+      "content_hash": {
+        "bsonType": "string",
+        "pattern": "^sha256:[a-f0-9]{64}$"
+      },
+      "published_by": {
+        "bsonType": "string"
+      },
+      "published_at": {
+        "bsonType": "date"
+      },
+      "validation": {
+        "bsonType": "object",
+        "required": [
+          "schema_ok",
+          "ids_ok",
+          "test_cases_passed"
+        ],
+        "properties": {
+          "schema_ok": {
+            "bsonType": "bool"
+          },
+          "ids_ok": {
+            "bsonType": "bool"
+          },
+          "test_cases_passed": {
+            "bsonType": "int",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

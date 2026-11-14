@@ -1,0 +1,188 @@
+{
+  "$and": [
+    {
+      "$jsonSchema": {
+        "bsonType": "object",
+        "required": [
+          "_id",
+          "tenant_id",
+          "memory_id",
+          "version",
+          "scope_key",
+          "status",
+          "type",
+          "content",
+          "embed_text",
+          "entities",
+          "content_hash",
+          "change",
+          "forgotten",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "_id": {
+            "bsonType": "string",
+            "pattern": "^memv_"
+          },
+          "tenant_id": {
+            "bsonType": "string"
+          },
+          "memory_id": {
+            "bsonType": "string",
+            "pattern": "^mem_"
+          },
+          "version": {
+            "bsonType": "int",
+            "minimum": 1
+          },
+          "scope_key": {
+            "bsonType": "string",
+            "pattern": "^(user|project|team|org):"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "proposed",
+              "superseded",
+              "conflict",
+              "disputed",
+              "expired",
+              "forgotten"
+            ]
+          },
+          "type": {
+            "enum": [
+              "fact",
+              "decision",
+              "preference",
+              "procedure",
+              "finding",
+              "open_question",
+              "episode"
+            ]
+          },
+          "content": {
+            "bsonType": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000
+          },
+          "embed_text": {
+            "bsonType": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "entities": {
+            "bsonType": [
+              "array",
+              "null"
+            ]
+          },
+          "content_hash": {
+            "bsonType": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "change": {
+            "bsonType": "object",
+            "required": [
+              "kind",
+              "by"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "create",
+                  "correct",
+                  "supersede",
+                  "flag",
+                  "share",
+                  "expire",
+                  "consent",
+                  "forget",
+                  "move"
+                ]
+              },
+              "by": {
+                "bsonType": "string"
+              },
+              "reason": {
+                "bsonType": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "forgotten": {
+            "bsonType": [
+              "object",
+              "null"
+            ],
+            "required": [
+              "by",
+              "at"
+            ],
+            "properties": {
+              "by": {
+                "bsonType": "string"
+              },
+              "at": {
+                "bsonType": "date"
+              },
+              "reason": {
+                "bsonType": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "created_at": {
+            "bsonType": "date"
+          },
+          "updated_at": {
+            "bsonType": "date"
+          }
+        }
+      }
+    },
+    {
+      "$expr": {
+        "$or": [
+          {
+            "$eq": [
+              "$forgotten",
+              null
+            ]
+          },
+          {
+            "$and": [
+              {
+                "$eq": [
+                  "$content",
+                  null
+                ]
+              },
+              {
+                "$eq": [
+                  "$embed_text",
+                  null
+                ]
+              },
+              {
+                "$eq": [
+                  "$entities",
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

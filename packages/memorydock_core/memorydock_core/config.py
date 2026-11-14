@@ -14,6 +14,13 @@ SHARED_DB = "memorydock"
 DEV_DB_PREFIXES = ("memorydock_dev_", "memorydock_test_", "memorydock_verify")
 
 
+def check_database_for_env(env: str, db: str) -> None:
+    if env == "prod" and db != SHARED_DB:
+        raise ValueError(f"ENV=prod requires the {SHARED_DB} database")
+    if env == "dev" and not db.startswith(DEV_DB_PREFIXES):
+        raise ValueError("ENV=dev requires a database starting with " + ", ".join(DEV_DB_PREFIXES))
+
+
 class MissingSetting(RuntimeError):
     def __init__(self, env_var: str) -> None:
         super().__init__(f"{env_var} is not set")
@@ -29,17 +36,12 @@ class Settings(BaseSettings):
     mongodb_uri_admin: SecretStr | None = None
     mongodb_db: str = ""
 
+    autoembed_model: str = "voyage-4"
+
     @model_validator(mode="after")
     def _database_matches_env(self) -> Settings:
-        db = self.mongodb_db
-        if not db:
-            return self
-        if self.env == "prod" and db != SHARED_DB:
-            raise ValueError(f"ENV=prod requires MONGODB_DB={SHARED_DB}")
-        if self.env == "dev" and not db.startswith(DEV_DB_PREFIXES):
-            raise ValueError(
-                "ENV=dev requires MONGODB_DB to start with one of: " + ", ".join(DEV_DB_PREFIXES)
-            )
+        if self.mongodb_db:
+            check_database_for_env(self.env, self.mongodb_db)
         return self
 
     def require_secret(self, field: str) -> str:

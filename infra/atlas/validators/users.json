@@ -1,0 +1,61 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "tenant_id",
+      "idp_sub",
+      "email",
+      "teams",
+      "roles",
+      "created_at",
+      "updated_at"
+    ],
+    "properties": {
+      "_id": {
+        "bsonType": "string",
+        "pattern": "^usr_"
+      },
+      "tenant_id": {
+        "bsonType": "string"
+      },
+      "idp_sub": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "email": {
+        "bsonType": "string",
+        "maxLength": 320
+      },
+      "display_name": {
+        "bsonType": [
+          "string",
+          "null"
+        ]
+      },
+      "teams": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "string"
+        }
+      },
+      "roles": {
+        "bsonType": "array",
+        "items": {
+          "enum": [
+            "member",
+            "admin"
+          ]
+        }
+      },
+      "created_at": {
+        "bsonType": "date"
+      },
+      "updated_at": {
+        "bsonType": "date"
+      }
+    }
+  }
+}

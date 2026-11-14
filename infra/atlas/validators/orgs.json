@@ -1,0 +1,51 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "name",
+      "kill_switch",
+      "created_at",
+      "updated_at"
+    ],
+    "properties": {
+      "_id": {
+        "bsonType": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+      },
+      "name": {
+        "bsonType": "string",
+        "maxLength": 200
+      },
+      "kill_switch": {
+        "bsonType": [
+          "object",
+          "null"
+        ],
+        "required": [
+          "by",
+          "at",
+          "reason"
+        ],
+        "properties": {
+          "by": {
+            "bsonType": "string"
+          },
+          "at": {
+            "bsonType": "date"
+          },
+          "reason": {
+            "bsonType": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "created_at": {
+        "bsonType": "date"
+      },
+      "updated_at": {
+        "bsonType": "date"
+      }
+    }
+  }
+}

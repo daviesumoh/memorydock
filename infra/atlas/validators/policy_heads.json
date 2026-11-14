@@ -1,0 +1,36 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": [
+      "_id",
+      "version",
+      "previous_version",
+      "activated_by",
+      "activated_at"
+    ],
+    "properties": {
+      "_id": {
+        "enum": [
+          "global"
+        ]
+      },
+      "version": {
+        "bsonType": "string",
+        "pattern": "^[a-f0-9]{12}$"
+      },
+      "previous_version": {
+        "bsonType": [
+          "string",
+          "null"
+        ],
+        "pattern": "^[a-f0-9]{12}$"
+      },
+      "activated_by": {
+        "bsonType": "string"
+      },
+      "activated_at": {
+        "bsonType": "date"
+      }
+    }
+  }
+}
