@@ -1,9 +1,13 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { withAuth } from "@workos-inc/authkit-nextjs";
 
 import { signOutAction } from "./auth-actions";
 
 async function SignedInAs() {
+  // Unsealing the session checks its expiry against the clock, so this must
+  // render per request rather than in a prefetch.
+  await connection();
   const { user } = await withAuth({ ensureSignedIn: true });
   return (
     <div className="flex items-center gap-4">
