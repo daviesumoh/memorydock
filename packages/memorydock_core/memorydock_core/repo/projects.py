@@ -18,3 +18,10 @@ async def memberships(
         .limit(MAX_PROJECTS_PER_USER)
     )
     return [d async for d in cursor]
+
+
+async def by_repo(
+    db: AsyncDatabase[dict[str, Any]], tenant: str, repo_id: str
+) -> dict[str, Any] | None:
+    """The project a normalized repo id maps to, within one tenant."""
+    return await db.projects.find_one({"tenant_id": tenant, "repo_remotes": repo_id})

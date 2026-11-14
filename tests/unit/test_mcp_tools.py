@@ -12,7 +12,10 @@ async def tools():
 
 async def test_phase_one_tools_are_registered(tools):
     _, by_name = tools
-    assert set(by_name) == {"whoami", "recall", "remember", "forget_memory"}
+    assert set(by_name) == {
+        "whoami", "recall", "remember", "forget_memory",
+        "acquire_lease", "release_lease", "list_leases",
+    }  # fmt: skip
 
 
 async def test_hints(tools):
@@ -21,6 +24,8 @@ async def test_hints(tools):
     assert by_name["recall"].annotations.read_only_hint is True
     assert by_name["remember"].annotations.read_only_hint is False
     assert by_name["forget_memory"].annotations.destructive_hint is True
+    assert by_name["list_leases"].annotations.read_only_hint is True
+    assert by_name["acquire_lease"].annotations.read_only_hint is False
 
 
 async def test_every_tool_has_a_description_and_output_schema(tools):

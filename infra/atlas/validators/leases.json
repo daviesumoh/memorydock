@@ -1,0 +1,156 @@
+{
+  "$and": [
+    {
+      "$jsonSchema": {
+        "bsonType": "object",
+        "required": [
+          "_id",
+          "tenant_id",
+          "project_id",
+          "resource_kind",
+          "resource_key",
+          "details",
+          "state",
+          "active",
+          "holder",
+          "intent",
+          "fence",
+          "created_at",
+          "renewed_at",
+          "released_at",
+          "updated_at"
+        ],
+        "properties": {
+          "_id": {
+            "bsonType": "string",
+            "pattern": "^lease_"
+          },
+          "tenant_id": {
+            "bsonType": "string"
+          },
+          "project_id": {
+            "bsonType": "string",
+            "pattern": "^prj_"
+          },
+          "resource_kind": {
+            "enum": [
+              "repo_path"
+            ]
+          },
+          "resource_key": {
+            "bsonType": "string",
+            "maxLength": 1200
+          },
+          "details": {
+            "bsonType": "object",
+            "required": [
+              "repo_id",
+              "path"
+            ],
+            "properties": {
+              "repo_id": {
+                "bsonType": "string"
+              },
+              "path": {
+                "bsonType": "string",
+                "maxLength": 1000
+              }
+            }
+          },
+          "state": {
+            "enum": [
+              "editing",
+              "pending_merge",
+              "released",
+              "overridden"
+            ]
+          },
+          "active": {
+            "bsonType": "bool"
+          },
+          "holder": {
+            "bsonType": "object",
+            "required": [
+              "user_id",
+              "session_id",
+              "client"
+            ],
+            "properties": {
+              "user_id": {
+                "bsonType": "string"
+              },
+              "session_id": {
+                "bsonType": "string"
+              },
+              "client": {
+                "bsonType": "string"
+              },
+              "display_name": {
+                "bsonType": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "intent": {
+            "bsonType": [
+              "string",
+              "null"
+            ],
+            "maxLength": 160
+          },
+          "fence": {
+            "bsonType": [
+              "int",
+              "long"
+            ],
+            "minimum": 1
+          },
+          "branch": {
+            "bsonType": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "bsonType": "date"
+          },
+          "renewed_at": {
+            "bsonType": "date"
+          },
+          "released_at": {
+            "bsonType": [
+              "date",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "bsonType": "date"
+          }
+        }
+      }
+    },
+    {
+      "$expr": {
+        "$or": [
+          {
+            "$eq": [
+              "$active",
+              false
+            ]
+          },
+          {
+            "$in": [
+              "$state",
+              [
+                "editing",
+                "pending_merge"
+              ]
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

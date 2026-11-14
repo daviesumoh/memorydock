@@ -23,6 +23,12 @@
     {"name": "tenant_session_ts", "keys": [["tenant_id", 1], ["actor.session_id", 1], ["ts", 1]]},
     {"name": "tenant_action_ts", "keys": [["tenant_id", 1], ["action", 1], ["ts", 1]]}
   ],
+  "leases": [
+    {"name": "active_lease_per_resource", "keys": [["tenant_id", 1], ["resource_kind", 1], ["resource_key", 1]], "unique": true, "partial": {"active": true}},
+    {"name": "tenant_holder_session_active", "keys": [["tenant_id", 1], ["holder.session_id", 1], ["active", 1]]},
+    {"name": "tenant_resource_fence", "keys": [["tenant_id", 1], ["resource_kind", 1], ["resource_key", 1], ["fence", -1]]},
+    {"name": "tenant_project_active", "keys": [["tenant_id", 1], ["project_id", 1], ["active", 1]]}
+  ],
   "memories": [
     {"name": "tenant_scope_status_type", "keys": [["tenant_id", 1], ["scope_key", 1], ["status", 1], ["type", 1]]},
     {"name": "tenant_status_expiry", "keys": [["tenant_id", 1], ["status", 1], ["validity.expires_at", 1]]},
