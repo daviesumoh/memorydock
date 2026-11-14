@@ -1,0 +1,38 @@
+{
+  "teams": [
+    {"name": "tenant_slug", "keys": [["tenant_id", 1], ["slug", 1]], "unique": true}
+  ],
+  "projects": [
+    {"name": "tenant_slug", "keys": [["tenant_id", 1], ["slug", 1]], "unique": true},
+    {"name": "repo_remotes", "keys": [["repo_remotes", 1]]}
+  ],
+  "users": [
+    {"name": "idp_sub", "keys": [["idp_sub", 1]], "unique": true, "partial": {"idp_sub": {"$type": "string"}}},
+    {"name": "tenant_email", "keys": [["tenant_id", 1], ["email", 1]], "unique": true}
+  ],
+  "agent_sessions": [
+    {"name": "tenant_user_status", "keys": [["tenant_id", 1], ["user_id", 1], ["status", 1]]},
+    {"name": "client_session", "keys": [["tenant_id", 1], ["user_id", 1], ["client", 1], ["client_session_id", 1]], "unique": true}
+  ],
+  "policies": [
+    {"name": "content_hash", "keys": [["content_hash", 1]], "unique": true}
+  ],
+  "audit_log": [
+    {"name": "tenant_seq", "keys": [["tenant_id", 1], ["seq", 1]], "unique": true},
+    {"name": "tenant_resource_ts", "keys": [["tenant_id", 1], ["resource.id", 1], ["ts", 1]]},
+    {"name": "tenant_session_ts", "keys": [["tenant_id", 1], ["actor.session_id", 1], ["ts", 1]]},
+    {"name": "tenant_action_ts", "keys": [["tenant_id", 1], ["action", 1], ["ts", 1]]}
+  ],
+  "memories": [
+    {"name": "tenant_scope_status_type", "keys": [["tenant_id", 1], ["scope_key", 1], ["status", 1], ["type", 1]]},
+    {"name": "tenant_status_expiry", "keys": [["tenant_id", 1], ["status", 1], ["validity.expires_at", 1]]},
+    {"name": "provenance_session", "keys": [["provenance.session_id", 1]]},
+    {"name": "live_content_hash", "keys": [["tenant_id", 1], ["scope_key", 1], ["content_hash", 1]], "unique": true, "partial": {"status": {"$in": ["active", "proposed"]}}}
+  ],
+  "memory_versions": [
+    {"name": "memory_version", "keys": [["memory_id", 1], ["version", 1]], "unique": true}
+  ],
+  "forget_blocklist": [
+    {"name": "tenant_content_hash", "keys": [["tenant_id", 1], ["content_hash", 1]], "unique": true}
+  ]
+}

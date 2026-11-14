@@ -1,0 +1,17 @@
+{
+  "type": "search",
+  "definition": {
+    "mappings": {
+      "dynamic": false,
+      "fields": {
+        "content": {"type": "string", "analyzer": "lucene.english"},
+        "entities": {"type": "document", "fields": {"name": {"type": "string"}}},
+        "tenant_id": {"type": "token"},
+        "scope_key": {"type": "token"},
+        "status": {"type": "token"},
+        "type": {"type": "token"},
+        "inject_in_work": {"type": "boolean"}
+      }
+    }
+  }
+}

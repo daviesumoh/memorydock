@@ -1,0 +1,13 @@
+{
+  "type": "vectorSearch",
+  "definition": {
+    "fields": [
+      {"type": "autoEmbed", "modality": "text", "path": "embed_text", "model": "${AUTOEMBED_MODEL}"},
+      {"type": "filter", "path": "tenant_id"},
+      {"type": "filter", "path": "scope_key"},
+      {"type": "filter", "path": "status"},
+      {"type": "filter", "path": "type"},
+      {"type": "filter", "path": "inject_in_work"}
+    ]
+  }
+}
