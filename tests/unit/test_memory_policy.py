@@ -81,3 +81,9 @@ def test_batch_keeps_request_order():
     effects = [d.effect for d in op().authorize_memories("memory.read", docs)]
     assert effects == ["deny", "allow", "deny"]
     assert op().authorize_memories("memory.read", []) == []
+
+
+def test_an_unknown_action_is_denied():
+    o = op()
+    assert effect(o, "memory.teleport", mem("user:halcyon/usr_rosa")) == "deny"
+    assert effect(o, "nothing", mem("user:halcyon/usr_rosa")) == "deny"
