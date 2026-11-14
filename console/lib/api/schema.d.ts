@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/v1/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Audit entries visible to the signed-in user, newest first */
+        get: operations["list_audit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -21,23 +38,327 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/memories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Memories the signed-in user may read, newest first */
+        get: operations["list_memories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/{memory_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One memory */
+        get: operations["get_memory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/{memory_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Version history of one memory, newest first */
+        get: operations["list_memory_versions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        Me: {
-            user_id: string;
-            email: string;
-            org_id: string;
+        /** AuditActor */
+        AuditActor: {
+            /** User Id */
+            user_id: string | null;
+            /** Session Id */
+            session_id: string | null;
+            /** Client */
+            client: string | null;
+            /**
+             * Via
+             * @enum {string}
+             */
+            via: "mcp" | "rest" | "hook" | "worker" | "console" | "webhook" | "system";
         };
+        /** AuditDecision */
+        AuditDecision: {
+            /**
+             * Effect
+             * @enum {string}
+             */
+            effect: "allow" | "deny" | "approval_required" | "n/a";
+            /** Policy Ids */
+            policy_ids: string[];
+            /** Policy Version */
+            policy_version: string | null;
+        };
+        /**
+         * AuditEntryOut
+         * @description One audit entry. `personal_placeholder` entries are another user's personal-scope
+         *     activity, shown to org admins without ids.
+         */
+        AuditEntryOut: {
+            /** Id */
+            id: string | null;
+            /** Seq */
+            seq: number;
+            /**
+             * Ts
+             * Format: date-time
+             */
+            ts: string;
+            actor: components["schemas"]["AuditActor"];
+            /** Action */
+            action: string;
+            resource: components["schemas"]["AuditResource"];
+            decision: components["schemas"]["AuditDecision"];
+            /** Result Status */
+            result_status: string | null;
+            /** Personal Placeholder */
+            personal_placeholder: boolean;
+            /** Hash */
+            hash: string;
+            /** Prev Hash */
+            prev_hash: string;
+        };
+        /** AuditPage */
+        AuditPage: {
+            /** Items */
+            items: components["schemas"]["AuditEntryOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** AuditResource */
+        AuditResource: {
+            /** Type */
+            type: string;
+            /** Id */
+            id: string | null;
+            /** Scope Keys */
+            scope_keys: string[];
+        };
+        /** ErrorBody */
+        ErrorBody: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Request Id */
+            request_id: string;
+            /** Field */
+            field?: string | null;
+        };
+        /** ErrorResponse */
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
         };
-        ErrorBody: {
-            code: string;
-            message: string;
-            request_id: string;
-            field?: string;
+        /** Forgotten */
+        Forgotten: {
+            /** By */
+            by: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Reason */
+            reason: string | null;
+        };
+        /** Me */
+        Me: {
+            /** User Id */
+            user_id: string;
+            /** Email */
+            email: string;
+            /** Org Id */
+            org_id: string;
+            /** Display Name */
+            display_name: string | null;
+            /** Roles */
+            roles: ("member" | "admin")[];
+            /** Teams */
+            teams: string[];
+            /** Projects */
+            projects: components["schemas"]["ProjectMembership"][];
+        };
+        /**
+         * MemoryOut
+         * @description A memory as the console sees it. Content is null once forgotten.
+         */
+        MemoryOut: {
+            /** Id */
+            id: string;
+            /** Scope Key */
+            scope_key: string;
+            /**
+             * Scope Level
+             * @enum {string}
+             */
+            scope_level: "user" | "project" | "team" | "org";
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "fact" | "decision" | "preference" | "procedure" | "finding" | "open_question" | "episode";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "proposed" | "superseded" | "conflict" | "disputed" | "expired" | "forgotten";
+            /** Category */
+            category: string | null;
+            /** Content */
+            content: string | null;
+            /** Entities */
+            entities: string[] | null;
+            provenance: components["schemas"]["Provenance"];
+            trust: components["schemas"]["Trust"];
+            /**
+             * Valid From
+             * Format: date-time
+             */
+            valid_from: string;
+            /** Expires At */
+            expires_at: string | null;
+            /** Supersedes */
+            supersedes: string | null;
+            /** Superseded By */
+            superseded_by: string | null;
+            /** Version */
+            version: number;
+            forgotten: components["schemas"]["Forgotten"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** MemoryPage */
+        MemoryPage: {
+            /** Items */
+            items: components["schemas"]["MemoryOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** MemoryVersionOut */
+        MemoryVersionOut: {
+            /** Id */
+            id: string;
+            /** Memory Id */
+            memory_id: string;
+            /** Version */
+            version: number;
+            /** Scope Key */
+            scope_key: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "proposed" | "superseded" | "conflict" | "disputed" | "expired" | "forgotten";
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "fact" | "decision" | "preference" | "procedure" | "finding" | "open_question" | "episode";
+            /** Content */
+            content: string | null;
+            change: components["schemas"]["VersionChange"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** MemoryVersionPage */
+        MemoryVersionPage: {
+            /** Items */
+            items: components["schemas"]["MemoryVersionOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** ProjectMembership */
+        ProjectMembership: {
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Maintainer */
+            maintainer: boolean;
+        };
+        /** Provenance */
+        Provenance: {
+            /**
+             * Source Client
+             * @enum {string}
+             */
+            source_client: "claude-code" | "codex" | "claude-app" | "chatgpt" | "console" | "worker" | "other";
+            /**
+             * Captured By
+             * @enum {string}
+             */
+            captured_by: "hook" | "extension" | "mcp_tool" | "console" | "distiller";
+            /** Actor User */
+            actor_user: string;
+            /** Session Id */
+            session_id: string | null;
+            /** Conversation Id */
+            conversation_id: string | null;
+        };
+        /** Trust */
+        Trust: {
+            /**
+             * Asserted By
+             * @enum {string}
+             */
+            asserted_by: "user_stated" | "user_confirmed" | "extracted_user" | "agent_inferred";
+            /** Confidence */
+            confidence: number;
+            /** Flags */
+            flags: number;
+        };
+        /** VersionChange */
+        VersionChange: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "create" | "correct" | "supersede" | "flag" | "share" | "expire" | "consent" | "forget" | "move";
+            /** By */
+            by: string;
+            /** Reason */
+            reason: string | null;
         };
     };
     responses: never;
@@ -48,6 +369,79 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_audit: {
+        parameters: {
+            query?: {
+                /** @description Page size */
+                limit?: number;
+                /** @description Opaque cursor from next_cursor */
+                cursor?: string | null;
+                action?: string | null;
+                session_id?: string | null;
+                resource_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not implemented yet */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     get_me: {
         parameters: {
             query?: never;
@@ -57,7 +451,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The signed-in user */
+            /** @description Successful Response */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -68,6 +462,255 @@ export interface operations {
             };
             /** @description Not signed in */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not implemented yet */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_memories: {
+        parameters: {
+            query?: {
+                /** @description Page size */
+                limit?: number;
+                /** @description Opaque cursor from next_cursor */
+                cursor?: string | null;
+                status?: ("active" | "proposed" | "superseded" | "conflict" | "disputed" | "expired" | "forgotten") | null;
+                type?: ("fact" | "decision" | "preference" | "procedure" | "finding" | "open_question" | "episode") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryPage"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not implemented yet */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_memory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Memory id */
+                memory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not implemented yet */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_memory_versions: {
+        parameters: {
+            query?: {
+                /** @description Page size */
+                limit?: number;
+                /** @description Opaque cursor from next_cursor */
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description Memory id */
+                memory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryVersionPage"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not implemented yet */
+            501: {
                 headers: {
                     [name: string]: unknown;
                 };

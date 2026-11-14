@@ -13,7 +13,7 @@ The repository is public from the first commit. `main` is protected:
 - changes land through a pull request; no approving review is required, so either developer can merge their own pull request once CI passes;
 - the rule applies to admins too;
 - no force-pushes or branch deletion;
-- the `python` and `hygiene` CI checks are required once they have run on the first pull request.
+- the `python`, `hygiene` and `integration` CI checks are required. A branch doesn't have to be up to date with `main` to merge; with two people merging often, re-syncing every PR cost a CI run each time, and ownership by directory keeps conflicts rare.
 
 The demo app repository is public as well. It holds fictional data only.
 
