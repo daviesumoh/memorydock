@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from memorydock_core.policy.pdp import Decision
+    from memorydock_core.principal import Principal
 
 Via = Literal["mcp", "rest", "hook", "worker", "console", "webhook", "system"]
 
@@ -60,3 +64,34 @@ class AuditEvent(_Strict):
     result: Result
     input_hash: str | None = None
     diff_hash: str | None = None
+
+
+def from_decision(decision: Decision) -> DecisionRecord:
+    """A policy Decision as the audit log records it."""
+    return DecisionRecord(
+        effect=decision.effect,
+        policy_ids=list(decision.policy_ids),
+        policy_version=decision.policy_version,
+    )
+
+
+def by_principal(
+    p: Principal,
+    via: Via,
+    action: str,
+    resource: Resource,
+    *,
+    decision: DecisionRecord,
+    result: str,
+    why: Why | None = None,
+    diff_hash: str | None = None,
+) -> AuditEvent:
+    return AuditEvent(
+        actor=Actor(via=via, user_id=p.user_id, session_id=p.session_id, client=p.client),
+        action=action,
+        resource=resource,
+        decision=decision,
+        why=why or Why(),
+        result=Result(status=result),
+        diff_hash=diff_hash,
+    )

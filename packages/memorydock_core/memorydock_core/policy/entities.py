@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from memorydock_core.policy.pdp import NS
+from memorydock_core.principal import Principal
 
 SCOPE_RANK = {"user": 0, "project": 1, "team": 2, "org": 3}
 
@@ -147,3 +148,40 @@ def external_target(
 
 def audit_view(tenant: str) -> dict[str, Any]:
     return _entity("AuditView", tenant, {"org": _ref("Org", tenant)})
+
+
+# Until categories exist, a memory takes the loosest category rules; Cedar still enforces scope.
+UNCATEGORISED_MAX_SCOPE = "org"
+
+
+def for_principal(p: Principal) -> list[dict[str, Any]]:
+    """The session, its user, org and teams: what every decision about this caller needs."""
+    tenant = p.tenant_id
+    scopes = sorted(p.user.scopes)
+    return [
+        org(tenant, kill_switch=p.kill_switch),
+        *(team(tenant, t) for t in p.user.teams),
+        user(
+            p.user_id,
+            tenant,
+            readable=scopes,
+            writable=scopes,
+            is_admin=p.user.is_org_admin,
+            teams=p.user.teams,
+        ),
+        session(p.session_id, tenant, user_id=p.user_id, client=p.client, status=p.session_status),
+    ]
+
+
+def memory_doc(doc: dict[str, Any]) -> dict[str, Any]:
+    """A stored memory as a Cedar entity. Content never becomes an attribute."""
+    rules = doc.get("category_rules") or {}
+    return memory(
+        str(doc["_id"]),
+        scope_key=doc["scope_key"],
+        status=doc["status"],
+        asserted_by=doc["trust"]["asserted_by"],
+        owner_user=doc["provenance"]["actor_user"],
+        category_max_scope=rules.get("max_scope", UNCATEGORISED_MAX_SCOPE),
+        confined=bool(rules.get("confined", False)),
+    )

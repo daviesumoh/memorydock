@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
 from typing import Any, ParamSpec, TypeVar
 
 from fastmcp.exceptions import ToolError
 from fastmcp.server.dependencies import get_access_token
+from memorydock_core.audit.chain import truncate_ms
 from memorydock_core.audit.events import Actor, AuditEvent, DecisionRecord, Resource, Result, Why
 from memorydock_core.errors import DomainError, Unauthenticated
+from memorydock_core.ops import Op
 from memorydock_core.principal import Principal
 from memorydock_core.repo import audit as audit_repo
 from memorydock_core.txn import run_transaction
@@ -25,6 +28,19 @@ async def principal() -> Principal:
     if token is None:
         raise Unauthenticated("sign in to memorydock first")
     return await state.current().resolver.principal_for(dict(token.claims))
+
+
+async def op() -> Op:
+    """Everything a domain operation needs for this MCP call."""
+    runtime = state.current()
+    return Op(
+        client=runtime.client,
+        db=runtime.db,
+        pdp=runtime.policy.pdp,
+        principal=await principal(),
+        via="mcp",
+        now=truncate_ms(datetime.now(UTC)),
+    )
 
 
 def tool_errors(fn: Callable[P, Awaitable[R]]) -> Callable[P, Awaitable[R]]:  # noqa: UP047
