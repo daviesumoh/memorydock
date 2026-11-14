@@ -3,7 +3,7 @@
   "info": {
     "title": "memorydock gateway",
     "version": "0.0.0",
-    "description": "Placeholder so the console's type generation has an input. The Phase 1 contract replaces this file with the export from the gateway (make openapi)."
+    "description": "Placeholder so the console can be built before the gateway exists. Shapes follow the Atlas validators and the build spec. The Phase 1 contract replaces this file with the export from the gateway (make openapi)."
   },
   "paths": {
     "/v1/me": {
@@ -15,7 +15,9 @@
             "description": "The signed-in user",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Me" }
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
               }
             }
           },
@@ -23,7 +25,349 @@
             "description": "Not signed in",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memories": {
+      "get": {
+        "operationId": "list_memories",
+        "summary": "Memories the caller can read",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Scope key, for example project:acme/lantern"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/MemoryType"
+            },
+            "description": "Memory type"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/MemoryStatus"
+            },
+            "description": "Memory status"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Category"
+          },
+          {
+            "name": "source_client",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SourceClient"
+            },
+            "description": "Client the memory came from"
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Project slug"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": "Page size; the server maximum is 100"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque cursor from next_cursor; malformed cursors get 422 invalid_cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of memories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memories/{memory_id}": {
+      "get": {
+        "operationId": "get_memory",
+        "summary": "One memory",
+        "parameters": [
+          {
+            "name": "memory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^mem_"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The memory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Memory"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such memory, or not readable by the caller",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memories/{memory_id}/versions": {
+      "get": {
+        "operationId": "list_memory_versions",
+        "summary": "Version history of one memory, newest first",
+        "parameters": [
+          {
+            "name": "memory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^mem_"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": "Page size; the server maximum is 100"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque cursor from next_cursor; malformed cursors get 422 invalid_cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryVersionPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such memory, or not readable by the caller",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audit": {
+      "get": {
+        "operationId": "list_audit",
+        "summary": "Audit entries visible to the caller, newest first",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Session"
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Acting user"
+          },
+          {
+            "name": "resource_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Resource id"
+          },
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Task"
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Action name"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "description": "Page size; the server maximum is 100"
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque cursor from next_cursor; malformed cursors get 422 invalid_cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of audit entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid filter or cursor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
@@ -36,30 +380,748 @@
       "Me": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["user_id", "email", "org_id"],
+        "required": [
+          "user_id",
+          "email",
+          "org_id"
+        ],
         "properties": {
-          "user_id": { "type": "string" },
-          "email": { "type": "string" },
-          "org_id": { "type": "string" }
+          "user_id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          }
         }
       },
       "ErrorResponse": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["error"],
+        "required": [
+          "error"
+        ],
         "properties": {
-          "error": { "$ref": "#/components/schemas/ErrorBody" }
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
         }
       },
       "ErrorBody": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["code", "message", "request_id"],
+        "required": [
+          "code",
+          "message",
+          "request_id"
+        ],
         "properties": {
-          "code": { "type": "string" },
-          "message": { "type": "string" },
-          "request_id": { "type": "string" },
-          "field": { "type": "string" }
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          }
+        }
+      },
+      "ScopeLevel": {
+        "type": "string",
+        "enum": [
+          "user",
+          "project",
+          "team",
+          "org"
+        ]
+      },
+      "MemoryType": {
+        "type": "string",
+        "enum": [
+          "fact",
+          "decision",
+          "preference",
+          "procedure",
+          "finding",
+          "open_question",
+          "episode"
+        ]
+      },
+      "MemoryStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "proposed",
+          "superseded",
+          "conflict",
+          "disputed",
+          "expired",
+          "forgotten"
+        ]
+      },
+      "SourceClient": {
+        "type": "string",
+        "enum": [
+          "claude-code",
+          "codex",
+          "claude-app",
+          "chatgpt",
+          "console",
+          "worker",
+          "other"
+        ]
+      },
+      "CapturedBy": {
+        "type": "string",
+        "enum": [
+          "hook",
+          "extension",
+          "mcp_tool",
+          "console",
+          "distiller"
+        ]
+      },
+      "AssertedBy": {
+        "type": "string",
+        "enum": [
+          "user_stated",
+          "user_confirmed",
+          "extracted_user",
+          "agent_inferred"
+        ]
+      },
+      "Trust": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asserted_by",
+          "confidence",
+          "flags"
+        ],
+        "properties": {
+          "asserted_by": {
+            "$ref": "#/components/schemas/AssertedBy"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "flags": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "MemorySummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "scope_key",
+          "scope_level",
+          "type",
+          "status",
+          "category",
+          "content",
+          "source_client",
+          "trust",
+          "version",
+          "expires_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^mem_"
+          },
+          "scope_key": {
+            "type": "string",
+            "pattern": "^(user|project|team|org):"
+          },
+          "scope_level": {
+            "$ref": "#/components/schemas/ScopeLevel"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MemoryType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MemoryStatus"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_client": {
+            "$ref": "#/components/schemas/SourceClient"
+          },
+          "trust": {
+            "$ref": "#/components/schemas/Trust"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_client",
+          "captured_by",
+          "actor_user",
+          "session_id",
+          "conversation_id"
+        ],
+        "properties": {
+          "source_client": {
+            "$ref": "#/components/schemas/SourceClient"
+          },
+          "captured_by": {
+            "$ref": "#/components/schemas/CapturedBy"
+          },
+          "actor_user": {
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Forgotten": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "by",
+          "at",
+          "reason"
+        ],
+        "properties": {
+          "by": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Memory": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "scope_key",
+          "scope_level",
+          "type",
+          "status",
+          "category",
+          "content",
+          "source_client",
+          "trust",
+          "version",
+          "expires_at",
+          "created_at",
+          "updated_at",
+          "provenance",
+          "valid_from",
+          "supersedes",
+          "superseded_by",
+          "conflicts_with",
+          "instruction_like",
+          "forgotten"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^mem_"
+          },
+          "scope_key": {
+            "type": "string",
+            "pattern": "^(user|project|team|org):"
+          },
+          "scope_level": {
+            "$ref": "#/components/schemas/ScopeLevel"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MemoryType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MemoryStatus"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_client": {
+            "$ref": "#/components/schemas/SourceClient"
+          },
+          "trust": {
+            "$ref": "#/components/schemas/Trust"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "supersedes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "superseded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "conflicts_with": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "instruction_like": {
+            "type": "boolean"
+          },
+          "forgotten": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Forgotten"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MemoryVersion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "status",
+          "type",
+          "scope_key",
+          "content",
+          "created_at"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/MemoryStatus"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MemoryType"
+          },
+          "scope_key": {
+            "type": "string"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AuditVia": {
+        "type": "string",
+        "enum": [
+          "mcp",
+          "rest",
+          "hook",
+          "worker",
+          "console",
+          "webhook",
+          "system"
+        ]
+      },
+      "AuditEffect": {
+        "type": "string",
+        "enum": [
+          "allow",
+          "deny",
+          "approval_required",
+          "n/a"
+        ]
+      },
+      "AuditActor": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "user_id",
+          "session_id",
+          "client",
+          "via"
+        ],
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "via": {
+            "$ref": "#/components/schemas/AuditVia"
+          }
+        }
+      },
+      "AuditResource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "id",
+          "path",
+          "scope_keys"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AuditDecision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "effect",
+          "policy_ids",
+          "policy_version"
+        ],
+        "properties": {
+          "effect": {
+            "$ref": "#/components/schemas/AuditEffect"
+          },
+          "policy_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "policy_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AuditEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "seq",
+          "ts",
+          "actor",
+          "action",
+          "resource",
+          "decision",
+          "result_status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^aud_"
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "ts": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/AuditActor"
+          },
+          "action": {
+            "type": "string"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/AuditResource"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/AuditDecision"
+          },
+          "result_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MemoryPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemorySummary"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MemoryVersionPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemoryVersion"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AuditPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEntry"
+            }
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
         }
       }
     }

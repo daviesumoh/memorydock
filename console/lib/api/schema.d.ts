@@ -21,6 +21,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/memories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Memories the caller can read */
+        get: operations["list_memories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/{memory_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One memory */
+        get: operations["get_memory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/{memory_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Version history of one memory, newest first */
+        get: operations["list_memory_versions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Audit entries visible to the caller, newest first */
+        get: operations["list_audit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -38,6 +106,131 @@ export interface components {
             message: string;
             request_id: string;
             field?: string;
+        };
+        /** @enum {string} */
+        ScopeLevel: "user" | "project" | "team" | "org";
+        /** @enum {string} */
+        MemoryType: "fact" | "decision" | "preference" | "procedure" | "finding" | "open_question" | "episode";
+        /** @enum {string} */
+        MemoryStatus: "active" | "proposed" | "superseded" | "conflict" | "disputed" | "expired" | "forgotten";
+        /** @enum {string} */
+        SourceClient: "claude-code" | "codex" | "claude-app" | "chatgpt" | "console" | "worker" | "other";
+        /** @enum {string} */
+        CapturedBy: "hook" | "extension" | "mcp_tool" | "console" | "distiller";
+        /** @enum {string} */
+        AssertedBy: "user_stated" | "user_confirmed" | "extracted_user" | "agent_inferred";
+        Trust: {
+            asserted_by: components["schemas"]["AssertedBy"];
+            confidence: number;
+            flags: number;
+        };
+        MemorySummary: {
+            id: string;
+            scope_key: string;
+            scope_level: components["schemas"]["ScopeLevel"];
+            type: components["schemas"]["MemoryType"];
+            status: components["schemas"]["MemoryStatus"];
+            category: string | null;
+            content: string | null;
+            source_client: components["schemas"]["SourceClient"];
+            trust: components["schemas"]["Trust"];
+            version: number;
+            expires_at: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        Provenance: {
+            source_client: components["schemas"]["SourceClient"];
+            captured_by: components["schemas"]["CapturedBy"];
+            actor_user: string;
+            session_id: string | null;
+            conversation_id: string | null;
+        };
+        Forgotten: {
+            by: string;
+            /** Format: date-time */
+            at: string;
+            reason: string | null;
+        };
+        Memory: {
+            id: string;
+            scope_key: string;
+            scope_level: components["schemas"]["ScopeLevel"];
+            type: components["schemas"]["MemoryType"];
+            status: components["schemas"]["MemoryStatus"];
+            category: string | null;
+            content: string | null;
+            source_client: components["schemas"]["SourceClient"];
+            trust: components["schemas"]["Trust"];
+            version: number;
+            expires_at: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            provenance: components["schemas"]["Provenance"];
+            /** Format: date-time */
+            valid_from: string;
+            supersedes: string | null;
+            superseded_by: string | null;
+            conflicts_with: string[];
+            instruction_like: boolean;
+            forgotten: components["schemas"]["Forgotten"] | null;
+        };
+        MemoryVersion: {
+            version: number;
+            status: components["schemas"]["MemoryStatus"];
+            type: components["schemas"]["MemoryType"];
+            scope_key: string;
+            content: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @enum {string} */
+        AuditVia: "mcp" | "rest" | "hook" | "worker" | "console" | "webhook" | "system";
+        /** @enum {string} */
+        AuditEffect: "allow" | "deny" | "approval_required" | "n/a";
+        AuditActor: {
+            user_id: string | null;
+            session_id: string | null;
+            client: string | null;
+            via: components["schemas"]["AuditVia"];
+        };
+        AuditResource: {
+            type: string;
+            id: string | null;
+            path: string | null;
+            scope_keys: string[];
+        };
+        AuditDecision: {
+            effect: components["schemas"]["AuditEffect"];
+            policy_ids: string[];
+            policy_version: string | null;
+        };
+        AuditEntry: {
+            id: string;
+            seq: number;
+            /** Format: date-time */
+            ts: string;
+            actor: components["schemas"]["AuditActor"];
+            action: string;
+            resource: components["schemas"]["AuditResource"];
+            decision: components["schemas"]["AuditDecision"];
+            result_status: string | null;
+        };
+        MemoryPage: {
+            items: components["schemas"]["MemorySummary"][];
+            next_cursor: string | null;
+        };
+        MemoryVersionPage: {
+            items: components["schemas"]["MemoryVersion"][];
+            next_cursor: string | null;
+        };
+        AuditPage: {
+            items: components["schemas"]["AuditEntry"][];
+            next_cursor: string | null;
         };
     };
     responses: never;
@@ -68,6 +261,199 @@ export interface operations {
             };
             /** @description Not signed in */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_memories: {
+        parameters: {
+            query?: {
+                /** @description Scope key, for example project:acme/lantern */
+                scope?: string;
+                /** @description Memory type */
+                type?: components["schemas"]["MemoryType"];
+                /** @description Memory status */
+                status?: components["schemas"]["MemoryStatus"];
+                /** @description Category */
+                category?: string;
+                /** @description Client the memory came from */
+                source_client?: components["schemas"]["SourceClient"];
+                /** @description Project slug */
+                project?: string;
+                /** @description Page size; the server maximum is 100 */
+                limit?: number;
+                /** @description Opaque cursor from next_cursor; malformed cursors get 422 invalid_cursor */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of memories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryPage"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid filter or cursor */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_memory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The memory */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Memory"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No such memory, or not readable by the caller */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_memory_versions: {
+        parameters: {
+            query?: {
+                /** @description Page size; the server maximum is 100 */
+                limit?: number;
+                /** @description Opaque cursor from next_cursor; malformed cursors get 422 invalid_cursor */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                memory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryVersionPage"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description No such memory, or not readable by the caller */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_audit: {
+        parameters: {
+            query?: {
+                /** @description Session */
+                session_id?: string;
+                /** @description Acting user */
+                user_id?: string;
+                /** @description Resource id */
+                resource_id?: string;
+                /** @description Task */
+                task_id?: string;
+                /** @description Action name */
+                action?: string;
+                /** @description Page size; the server maximum is 100 */
+                limit?: number;
+                /** @description Opaque cursor from next_cursor; malformed cursors get 422 invalid_cursor */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of audit entries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid filter or cursor */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
