@@ -21,7 +21,8 @@ export const MEMORY_FILTERS = [
     name: "status",
     label: "Status",
     kind: "select",
-    options: ["active", "proposed", "superseded", "conflict", "disputed", "expired", "forgotten"],
+    // Proposed memories are never listed; they wait in the review inbox.
+    options: ["active", "superseded", "conflict", "disputed", "expired", "forgotten"],
   },
 ] as const satisfies readonly FilterField[];
 
