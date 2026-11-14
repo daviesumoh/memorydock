@@ -91,3 +91,18 @@ export function useForgetMemory(memoryId: string) {
     onSuccess: () => refreshAfterWrite(client, memoryId),
   });
 }
+
+export function useMe() {
+  return useQuery({
+    queryKey: ["me"],
+    queryFn: async ({ signal }) => unwrap(await gateway.GET("/v1/me", { signal })),
+    staleTime: 60_000,
+  });
+}
+
+// Recomputes the whole chain, so it runs only when asked, never on page load.
+export function useVerifyAudit() {
+  return useMutation({
+    mutationFn: async () => unwrap(await gateway.GET("/v1/audit/verify")),
+  });
+}

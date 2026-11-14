@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
+from memorydock_core.audit.verify import VerifyResult
 from memorydock_core.config import Settings
 from memorydock_core.paging import decode_cursor, encode_cursor
 from memorydock_core.policy.bundle import load_dir
@@ -234,3 +236,60 @@ def test_invalid_input_names_the_field(call, query, field):
     assert resp.status_code == 422
     assert resp.json()["error"]["field"] == field
     assert log.calls == []
+
+
+class FakeVerify:
+    def __init__(self, result):
+        self.result = result
+        self.tenants = []
+
+    async def __call__(self, db, tenant):
+        self.tenants.append(tenant)
+        return self.result
+
+
+@pytest.fixture
+def verify(call, monkeypatch):
+    def run(p, result=None):
+        fake = FakeVerify(result or VerifyResult(True, 12, None, "chain verifies"))
+        monkeypatch.setattr(route, "verify_chain", fake)
+        resp, _ = call(p, [], "/verify")
+        return resp, fake
+
+    return run
+
+
+ADMIN = viewer("usr_milo", roles=("admin", "member"))
+
+
+def test_admins_verify_their_own_orgs_chain(verify):
+    resp, fake = verify(ADMIN)
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "ok": True,
+        "checked": 12,
+        "first_bad_seq": None,
+        "reason": "chain verifies",
+    }
+    assert fake.tenants == [H]
+
+
+def test_a_broken_chain_reports_the_first_bad_entry(verify):
+    broken = VerifyResult(False, 6, 7, "hash does not match the entry's content")
+    resp, _ = verify(ADMIN, broken)
+    assert resp.status_code == 200
+    assert resp.json()["ok"] is False and resp.json()["first_bad_seq"] == 7
+
+
+def test_members_cannot_verify(verify):
+    resp, fake = verify(viewer())
+    assert resp.status_code == 403
+    assert resp.json()["error"]["message"] == "only org admins can verify the audit chain"
+    assert fake.tenants == []
+
+
+def test_a_blocked_admin_is_told_why(verify):
+    resp, fake = verify(replace(ADMIN, kill_switch=True))
+    assert resp.status_code == 403
+    assert "org-kill-switch" in resp.json()["error"]["message"]
+    assert fake.tenants == []
