@@ -10,7 +10,7 @@ export interface StorageArea {
 export const REFRESH_BEFORE_EXPIRY_MS = 60_000;
 
 const ACCESS_KEY = "auth.access";
-const REFRESH_KEY = "auth.refresh";
+export const REFRESH_KEY = "auth.refresh";
 
 interface StoredAccess {
   token: string;

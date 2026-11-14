@@ -1,7 +1,7 @@
 import { captureState } from "./capture-state.ts";
 import { authorizeUrl, codeFromRedirect, exchangeCode, OAuthError, refreshTokens, type OAuthSettings } from "./auth/oauth.ts";
 import { challengeFor, createVerifier, randomToken } from "./auth/pkce.ts";
-import { TokenStore } from "./auth/token-store.ts";
+import { REFRESH_KEY, TokenStore } from "./auth/token-store.ts";
 import { allowedFromContentScript, parseMessage, type ExtensionMessage, type Reply } from "./messages.ts";
 
 declare const GATEWAY_URL: string;
@@ -26,8 +26,11 @@ const tokensReady: Promise<TokenStore> = chrome.storage.local
   .setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" })
   .then(
     () => chrome.storage.local,
-    () => {
+    async () => {
       console.warn("memorydock: storage.local could not be restricted; sign-in will not survive a restart");
+      // A token saved there on an earlier start, while it was restricted, would
+      // now be readable by content scripts.
+      await chrome.storage.local.remove(REFRESH_KEY);
       return chrome.storage.session;
     },
   )
