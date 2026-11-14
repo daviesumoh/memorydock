@@ -48,7 +48,7 @@ Never edit `schema.d.ts` by hand. On a merge conflict, take either side and run 
 
 All gateway calls go through the typed client in `lib/api/client.ts`, which calls the same-origin proxy.
 
-While gateway routes are still stubs, `mocks/handlers.ts` answers them with fictional data. The same handlers serve tests (`mocks/node.ts`) and the browser (`mocks/browser.ts`). To use them in `pnpm dev`, set `NEXT_PUBLIC_API_MOCKING=enabled` in `console/.env.local` and restart. Production builds never mock, whatever the variable says. Remove a handler once its real route works.
+While gateway routes are still stubs, `mocks/handlers.ts` answers them with fictional data. The same handlers serve tests (`mocks/node.ts`) and the browser (`mocks/browser.ts`). To use them in `pnpm dev`, set `NEXT_PUBLIC_API_MOCKING=enabled` in `console/.env.local` and restart. Pages render as usual while the service worker starts; calls made through the typed client wait for it, so none reaches the real gateway first. Production builds never mock, whatever the variable says, and contain no MSW code or fixtures. Remove a handler once its real route works.
 
 ## Checks
 

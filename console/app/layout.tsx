@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
 
-import { MockingGate } from "@/mocks/mocking-gate";
+import { MockWorker } from "@/mocks/mock-worker";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,9 +12,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
-        <AuthKitProvider>
-          <MockingGate>{children}</MockingGate>
-        </AuthKitProvider>
+        <AuthKitProvider>{children}</AuthKitProvider>
+        <MockWorker />
       </body>
     </html>
   );

@@ -1,5 +1,7 @@
 import createClient from "openapi-fetch";
 
+import { waitForMocks } from "@/mocks/ready";
+
 import type { components, paths } from "./schema";
 
 export type Schemas = components["schemas"];
@@ -11,7 +13,10 @@ export function createGatewayClient(baseUrl = "/api/gateway") {
     baseUrl,
     // openapi-fetch otherwise keeps the fetch that existed when the client was
     // created, which misses anything that patches fetch later (MSW in tests).
-    fetch: (request) => globalThis.fetch(request),
+    fetch: async (request) => {
+      await waitForMocks();
+      return globalThis.fetch(request);
+    },
   });
 }
 

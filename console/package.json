@@ -11,7 +11,7 @@
     "test:e2e": "playwright test",
     "gen:api": "openapi-typescript ../docs/openapi.json -o lib/api/schema.d.ts",
     "gen:api:check": "openapi-typescript ../docs/openapi.json -o lib/api/schema.d.ts --check",
-    "predev": "msw init public"
+    "predev": "msw init public --no-save"
   },
   "dependencies": {
     "@workos-inc/authkit-nextjs": "4.6.3",
