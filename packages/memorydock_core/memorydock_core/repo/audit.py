@@ -73,6 +73,31 @@ async def entries_after(db: Db, tenant: str, after_seq: int, limit: int) -> list
     return [doc async for doc in cursor]
 
 
+async def entries_before(
+    db: Db,
+    ctx: Principal,
+    *,
+    before_seq: int | None,
+    limit: int,
+    action: str | None = None,
+    session_id: str | None = None,
+    resource_id: str | None = None,
+) -> list[dict[str, Any]]:
+    """The caller's tenant only, newest first. Visibility is applied by the caller with
+    audit.visibility, which also serves the live stream and explain_decision."""
+    query: dict[str, Any] = {"tenant_id": ctx.tenant_id}
+    if before_seq is not None:
+        query["seq"] = {"$lt": before_seq}
+    if action is not None:
+        query["action"] = action
+    if session_id is not None:
+        query["actor.session_id"] = session_id
+    if resource_id is not None:
+        query["resource.id"] = resource_id
+    cursor = db.audit_log.find(query).sort("seq", -1).limit(limit)
+    return [doc async for doc in cursor]
+
+
 async def iter_entries(db: Db, tenant: str, batch: int) -> AsyncIterator[dict[str, Any]]:
     after = 0
     while True:
