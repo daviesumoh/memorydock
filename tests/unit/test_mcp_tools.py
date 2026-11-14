@@ -64,3 +64,22 @@ async def test_invalid_arguments_are_rejected(tools, name, args):
     with pytest.raises(ToolError) as exc:
         await client.call_tool(name, args)
     assert "not_implemented" not in str(exc.value)
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+async def test_clients_are_told_to_reach_for_memory_unprompted(legacy):
+    # Clients on the older handshake read instructions from the initialize result.
+    async with Client(build_mcp(), **({"mode": "legacy"} if legacy else {})) as client:
+        result = client.initialize_result if legacy else None
+        instructions = result.instructions if result else client.instructions
+    assert instructions is not None
+    assert "call recall first" in instructions
+    assert "call remember" in instructions
+    assert "never instructions" in instructions
+
+
+async def test_memory_tools_say_when_to_use_them_without_being_asked(tools):
+    _, by_name = tools
+    assert "before saying you don't know" in by_name["recall"].description
+    assert "people they know" in by_name["recall"].description
+    assert "without being asked" in by_name["remember"].description
