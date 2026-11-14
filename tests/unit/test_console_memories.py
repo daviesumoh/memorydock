@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 from memorydock_core.config import Settings
+from memorydock_core.errors import Conflict, Forbidden, NotFound
 from memorydock_core.ids import new_id
 from memorydock_core.memory.service import new_memory
 from memorydock_core.paging import decode_cursor, encode_cursor
@@ -78,9 +79,13 @@ class FakeRepo:
     does, so the routes' own checks are what these tests exercise."""
 
     def __init__(self, docs, versions=()):
-        self.docs = sorted(docs, key=lambda d: d["_id"], reverse=True)
+        self.source = docs  # shared with FakeService, which writes to it
         self.versions = list(versions)
         self.calls = []
+
+    @property
+    def docs(self):
+        return sorted(self.source, key=lambda d: d["_id"], reverse=True)
 
     def _in_scope(self, p, d):
         return d["tenant_id"] == p.tenant_id and d["scope_key"] in p.user.scopes
@@ -114,8 +119,8 @@ def pdp():
 
 @pytest.fixture
 def call(pdp, monkeypatch):
-    def run(p, path, docs=(), versions=()):
-        repo = FakeRepo(docs, versions)
+    def run(p, path, docs=(), versions=(), json=None):
+        repo = FakeRepo(docs if isinstance(docs, list) else list(docs), versions)
         for name in ("page_in_scopes", "get_in_scopes", "versions_before"):
             monkeypatch.setattr(route.memories_repo, name, getattr(repo, name))
         runtime = SimpleNamespace(client=None, db=None, policy=SimpleNamespace(pdp=pdp))
@@ -127,7 +132,7 @@ def call(pdp, monkeypatch):
 
         app.dependency_overrides[require_principal] = as_viewer
         with TestClient(app, raise_server_exceptions=False) as c:
-            resp = c.get(path)
+            resp = c.get(path) if json is None else c.post(path, json=json)
         return resp, repo
 
     yield run
@@ -296,3 +301,133 @@ def test_invalid_input_names_the_field(call, path, field):
     resp, _ = call(ROSA, path)
     assert resp.status_code == 422
     assert resp.json()["error"]["field"] == field
+
+
+class FakeService:
+    """Stands in for memory.service; records each call and the Op it was given."""
+
+    def __init__(self, repo_docs, *, created=True, error=None):
+        self.repo_docs = repo_docs
+        self.created = created
+        self.error = error
+        self.calls = []
+
+    async def remember(self, op, **kw):
+        self.calls.append((op, kw))
+        if self.error:
+            raise self.error
+        doc = memory(kw["content"], scope=kw["scope"] or "user")
+        self.repo_docs.append(doc)
+        return SimpleNamespace(id=doc["_id"], created=self.created)
+
+    async def forget(self, op, *, memory_id, reason):
+        self.calls.append((op, {"memory_id": memory_id, "reason": reason}))
+        if self.error:
+            raise self.error
+        for i, d in enumerate(self.repo_docs):
+            if d["_id"] == memory_id:
+                gone = {"by": op.principal.user_id, "at": NOW, "reason": reason}
+                self.repo_docs[i] = {
+                    **d, "status": "forgotten", "content": None, "entities": None,
+                    "forgotten": gone, "version": d["version"] + 1,
+                }  # fmt: skip
+        return "forgotten"
+
+
+@pytest.fixture
+def write(call, monkeypatch):
+    def run(p, path, body, docs=(), **kw):
+        docs = list(docs)
+        fake = FakeService(docs, **kw)
+        monkeypatch.setattr(route.memory_service, "remember", fake.remember)
+        monkeypatch.setattr(route.memory_service, "forget", fake.forget)
+        # The repository stand-in reads the same list the fake service writes to.
+        resp, _ = call(p, path, docs, json=body)
+        return resp, fake
+
+    return run
+
+
+def test_create_saves_as_the_user_through_the_console(write):
+    body = {"content": "Ship on Thursdays", "type": "procedure", "scope": "project"}
+    resp, fake = write(ROSA, "/v1/memories", body)
+    assert resp.status_code == 201
+    assert resp.json()["content"] == "Ship on Thursdays"
+    op, kw = fake.calls[0]
+    assert (op.via, op.principal) == ("console", ROSA)
+    assert kw == {
+        "content": "Ship on Thursdays",
+        "type": "procedure",
+        "stated_by_user": True,
+        "scope": "project",
+        "entities": None,
+        "captured_by": "console",
+    }
+
+
+def test_create_of_an_existing_memory_is_a_200(write):
+    resp, _ = write(ROSA, "/v1/memories", {"content": "x", "type": "fact"}, created=False)
+    assert resp.status_code == 200
+
+
+@pytest.mark.parametrize(
+    ("error", "status", "code"),
+    [
+        (Conflict("forgotten", code="forgotten_content"), 409, "forgotten_content"),
+        (Forbidden("needs approval", code="approval_required"), 403, "approval_required"),
+        (Forbidden("no", code="policy_denied"), 403, "policy_denied"),
+    ],
+)
+def test_create_maps_domain_errors(write, error, status, code):
+    resp, _ = write(ROSA, "/v1/memories", {"content": "x", "type": "fact"}, error=error)
+    assert resp.status_code == status
+    assert resp.json()["error"]["code"] == code
+
+
+@pytest.mark.parametrize(
+    ("body", "field"),
+    [
+        ({"type": "fact"}, "content"),
+        ({"content": "", "type": "fact"}, "content"),
+        ({"content": "x" * 4001, "type": "fact"}, "content"),
+        ({"content": "x", "type": "rumour"}, "type"),
+        ({"content": "x", "type": "fact", "scope": "everyone"}, "scope"),
+        ({"content": "x", "type": "fact", "entities": ["a"] * 21}, "entities"),
+        ({"content": "x", "type": "fact", "scope_key": "org:halcyon"}, "scope_key"),
+    ],
+)
+def test_create_rejects_bad_bodies_before_saving(write, body, field):
+    resp, fake = write(ROSA, "/v1/memories", body)
+    assert resp.status_code == 422
+    assert resp.json()["error"]["field"] == field
+    assert fake.calls == []
+
+
+def test_forget_returns_the_stub(write):
+    doc = memory()
+    resp, fake = write(ROSA, f"/v1/memories/{doc['_id']}/forget", {"reason": "wrong"}, [doc])
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "forgotten" and body["content"] is None
+    assert body["forgotten"]["reason"] == "wrong"
+    op, kw = fake.calls[0]
+    assert op.via == "console" and kw == {"memory_id": doc["_id"], "reason": "wrong"}
+
+
+def test_forget_without_a_reason_passes_none(write):
+    doc = memory(scope="user")
+    _, fake = write(ROSA, f"/v1/memories/{doc['_id']}/forget", {}, [doc])
+    assert fake.calls[0][1]["reason"] is None
+
+
+def test_forget_of_an_unknown_memory_is_a_404(write):
+    err = NotFound("no such memory", field="id")
+    resp, _ = write(ROSA, f"/v1/memories/{new_id('mem')}/forget", {}, error=err)
+    assert resp.status_code == 404
+
+
+def test_forget_rejects_a_bad_id_and_a_long_reason(write):
+    bad, fake = write(ROSA, "/v1/memories/mem_1/forget", {})
+    assert bad.status_code == 422 and fake.calls == []
+    long, fake = write(ROSA, f"/v1/memories/{new_id('mem')}/forget", {"reason": "x" * 501})
+    assert long.json()["error"]["field"] == "reason" and fake.calls == []

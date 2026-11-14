@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Path, Response
 from memorydock_core.audit.chain import truncate_ms
 from memorydock_core.errors import Forbidden, NotFound
 from memorydock_core.ids import id_pattern
-from memorydock_core.models.common import MemoryStatus, MemoryType
+from memorydock_core.memory import service as memory_service
+from memorydock_core.models.common import ApiModel, MemoryStatus, MemoryType, ScopeLevel
 from memorydock_core.models.memory import (
     Forgotten,
     MemoryOut,
@@ -23,6 +24,7 @@ from memorydock_core.paging import MAX_LIMIT, decode_cursor, encode_cursor
 from memorydock_core.policy.pdp import Decision
 from memorydock_core.principal import Principal
 from memorydock_core.repo import memories as memories_repo
+from pydantic import Field
 
 from memorydock_gateway import state
 from memorydock_gateway.api.params import DEFAULT_PAGE, Cursor, Limit
@@ -37,6 +39,24 @@ MemoryId = Path(pattern=id_pattern("mem"), description="Memory id")
 # many and then stops without a cursor: the last memory read may be one the viewer can't see,
 # and a cursor would hand them its id.
 MAX_SCANNED = 500
+
+
+class MemoryCreate(ApiModel):
+    content: Annotated[str, Field(min_length=1, max_length=4000, description="One idea")]
+    type: MemoryType
+    scope: ScopeLevel | None = Field(
+        default=None, description="Who should see it; defaults to the signed-in user only"
+    )
+    entities: (
+        Annotated[list[Annotated[str, Field(min_length=1, max_length=100)]], Field(max_length=20)]
+        | None
+    ) = None
+
+
+class ForgetRequest(ApiModel):
+    reason: Annotated[str | None, Field(max_length=500)] = Field(
+        default=None, description="Required by policy for memories outside the user's own scope"
+    )
 
 
 def _op(p: Principal) -> Op:
@@ -190,3 +210,38 @@ def version_out(doc: dict[str, Any]) -> MemoryVersionOut:
         change=VersionChange(kind=change["kind"], by=change["by"], reason=change.get("reason")),
         created_at=doc["created_at"],
     )
+
+
+@router.post(
+    "/memories",
+    operation_id="create_memory",
+    summary="Save a memory as the signed-in user; 201 when new, 200 when it already existed",
+    status_code=201,
+)
+async def create_memory(p: CurrentPrincipal, body: MemoryCreate, response: Response) -> MemoryOut:
+    op = _op(p)
+    saved = await memory_service.remember(
+        op,
+        content=body.content,
+        type=body.type,
+        stated_by_user=True,
+        scope=body.scope,
+        entities=body.entities,
+        captured_by="console",
+    )
+    if not saved.created:
+        response.status_code = 200
+    return memory_out(await _readable_memory(op, saved.id))
+
+
+@router.post(
+    "/memories/{memory_id}/forget",
+    operation_id="forget_memory",
+    summary="Forget a memory: its content is erased from it and every version",
+)
+async def forget_memory(
+    p: CurrentPrincipal, body: ForgetRequest, memory_id: str = MemoryId
+) -> MemoryOut:
+    op = _op(p)
+    await memory_service.forget(op, memory_id=memory_id, reason=body.reason)
+    return memory_out(await _readable_memory(op, memory_id))
