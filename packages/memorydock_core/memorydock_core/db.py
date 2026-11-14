@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from pymongo import MongoClient
+from pymongo import AsyncMongoClient, MongoClient
 
 SERVER_SELECTION_TIMEOUT_MS = 5_000
 CONNECT_TIMEOUT_MS = 5_000
@@ -20,6 +20,16 @@ def redact_uris(text: str) -> str:
 
 def sync_client(uri: str, *, app_name: str) -> MongoClient[dict[str, Any]]:
     return MongoClient(
+        uri,
+        appname=app_name,
+        serverSelectionTimeoutMS=SERVER_SELECTION_TIMEOUT_MS,
+        connectTimeoutMS=CONNECT_TIMEOUT_MS,
+        tz_aware=True,
+    )
+
+
+def async_client(uri: str, *, app_name: str) -> AsyncMongoClient[dict[str, Any]]:
+    return AsyncMongoClient(
         uri,
         appname=app_name,
         serverSelectionTimeoutMS=SERVER_SELECTION_TIMEOUT_MS,

@@ -8,6 +8,7 @@ dependencies = [
     "pydantic-settings>=2.16",
     "pymongo>=4.20",
     "python-ulid>=4.1",
+    "rfc8785>=0.1",
     "cedarpy>=4.12",
 ]
 
