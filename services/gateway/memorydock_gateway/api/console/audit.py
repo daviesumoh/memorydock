@@ -28,7 +28,8 @@ from memorydock_gateway.errors import ERROR_RESPONSES
 router = APIRouter(prefix="/v1", tags=["console"], responses=ERROR_RESPONSES)
 
 # Entries a viewer may not see are skipped, so one request reads at most this many before
-# returning a short page with a cursor to continue from.
+# returning a short page. Unfiltered, the page carries a cursor to continue from; filtered, it
+# does not, because that cursor would be the seq of a hidden entry that matched the filter.
 MAX_SCANNED = 500
 
 Fetch = Callable[[int | None, int], Awaitable[list[dict[str, Any]]]]
@@ -72,11 +73,20 @@ async def list_audit(
 
     # A placeholder that matched an id filter would confirm the hidden id to whoever guessed it.
     by_id = session_id is not None or resource_id is not None
-    return await visible_page(fetch, p, limit=limit, before_seq=before, placeholders=not by_id)
+    filtered = by_id or action is not None
+    return await visible_page(
+        fetch, p, limit=limit, before_seq=before, placeholders=not by_id, filtered=filtered
+    )
 
 
 async def visible_page(
-    fetch: Fetch, p: Principal, *, limit: int, before_seq: int | None, placeholders: bool
+    fetch: Fetch,
+    p: Principal,
+    *,
+    limit: int,
+    before_seq: int | None,
+    placeholders: bool,
+    filtered: bool,
 ) -> AuditPage:
     items: list[AuditEntryOut] = []
     scanned = 0
@@ -100,7 +110,7 @@ async def visible_page(
                 return AuditPage(items=items, next_cursor=_after(last))
         if len(docs) < want:
             return AuditPage(items=items, next_cursor=None)
-    return AuditPage(items=items, next_cursor=_after(last))
+    return AuditPage(items=items, next_cursor=None if filtered else _after(last))
 
 
 def _after(seq: int | None) -> str | None:

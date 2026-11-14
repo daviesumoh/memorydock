@@ -186,6 +186,22 @@ def test_scanning_stops_at_the_cap_with_a_cursor_to_continue(call):
     assert decode_cursor(resp.json()["next_cursor"], integer=True) == 701 - route.MAX_SCANNED + 1
 
 
+@pytest.mark.parametrize("query", ["?resource_id=mem_x", "?action=memory.create"])
+def test_a_filtered_scan_cap_gives_no_cursor_from_a_hidden_match(call, query):
+    hidden = [
+        doc(s, user="usr_milo", scope_keys=[f"project:{H}/secret"], rid="mem_x")
+        for s in range(1, 601)
+    ]
+    resp, _ = call(viewer(), hidden, query)
+    assert resp.json() == {"items": [], "next_cursor": None}
+
+
+def test_a_filtered_full_page_still_has_a_cursor(call):
+    resp, _ = call(viewer(), [doc(s) for s in range(1, 5)], "?action=memory.create&limit=2")
+    assert seqs(resp) == [4, 3]
+    assert decode_cursor(resp.json()["next_cursor"], integer=True) == 3
+
+
 @pytest.mark.parametrize(
     ("p", "policy"),
     [
