@@ -220,6 +220,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--dry-run", action="store_true", help="print the plan without changing anything"
     )
+    parser.add_argument(
+        "--skip-search",
+        action="store_true",
+        help="skip search indexes (Atlas Local has no embedding model; tests don't need them)",
+    )
     args = parser.parse_args(argv)
 
     settings = Settings()
@@ -238,8 +243,9 @@ def main(argv: list[str] | None = None) -> int:
         print(f"database {db_name}")
         runner.collections()
         runner.indexes()
-        runner.search_indexes()
-        if args.wait and not args.dry_run:
+        if not args.skip_search:
+            runner.search_indexes()
+        if args.wait and not args.dry_run and not args.skip_search:
             runner.wait_for_search(layout.search_indexes)
     except Exception as exc:
         print(f"FAIL {type(exc).__name__}: {redact_uris(str(exc))[:300]}")

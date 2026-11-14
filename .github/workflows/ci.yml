@@ -27,6 +27,34 @@ jobs:
       - run: make privacy
       - run: make test
 
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mongodb:
+        # Atlas Local has no embedding model, so these tests skip search indexes; search is
+        # checked against the live cluster.
+        image: mongodb/mongodb-atlas-local:9.0.4
+        ports:
+          - 27017:27017
+    env:
+      ENV: dev
+      MONGODB_URI_ADMIN: mongodb://localhost:27017/?directConnection=true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --all-packages
+      - name: Wait for MongoDB
+        run: |
+          for i in $(seq 1 60); do
+            uv run python -c "from pymongo import MongoClient; MongoClient('$MONGODB_URI_ADMIN', serverSelectionTimeoutMS=2000).admin.command('ping')" && exit 0
+            sleep 3
+          done
+          exit 1
+      - run: make test-integration
+
   hygiene:
     runs-on: ubuntu-latest
     timeout-minutes: 5
