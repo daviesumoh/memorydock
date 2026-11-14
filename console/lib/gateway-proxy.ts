@@ -15,6 +15,17 @@ const FORWARDED_RESPONSE_HEADERS = [
   "x-request-id",
 ];
 
+// Proxied responses are served from the console's origin, next to the session
+// cookie. Anything a browser might render (HTML, SVG) could run script that
+// came from agent-written content, so only data types get through.
+const ALLOWED_RESPONSE_TYPES = new Set(["application/json", "application/problem+json", "text/event-stream"]);
+
+// Applied to every proxy response, including the proxy's own errors.
+const HARDENING_HEADERS: Record<string, string> = {
+  "x-content-type-options": "nosniff",
+  "content-security-policy": "sandbox; default-src 'none'; frame-ancestors 'none'",
+};
+
 // Covers the wait for response headers only. Streams (SSE) stay open after that.
 export const UPSTREAM_HEADERS_TIMEOUT_MS = 15_000;
 
@@ -22,7 +33,8 @@ export type ProxyErrorCode =
   | "not_signed_in"
   | "not_found"
   | "gateway_unreachable"
-  | "gateway_timeout";
+  | "gateway_timeout"
+  | "gateway_bad_response";
 
 export interface ForwardOptions {
   request: Request;
@@ -35,8 +47,12 @@ export interface ForwardOptions {
 function errorResponse(status: number, code: ProxyErrorCode, message: string, requestId: string) {
   return Response.json(
     { code, message, request_id: requestId },
-    { status, headers: { "cache-control": "no-store", "x-request-id": requestId } },
+    { status, headers: { ...HARDENING_HEADERS, "cache-control": "no-store", "x-request-id": requestId } },
   );
+}
+
+function mediaType(contentType: string | null): string | null {
+  return contentType?.split(";", 1)[0].trim().toLowerCase() || null;
 }
 
 // Only /v1 is reachable, and dot segments are refused so a crafted path cannot
@@ -110,7 +126,20 @@ export async function forwardToGateway({
     clearTimeout(timer);
   }
 
-  const responseHeaders = new Headers();
+  // A body without a type would be sniffed, so it is refused as well. Bodiless
+  // responses such as 204 need no type.
+  const type = mediaType(upstream.headers.get("content-type"));
+  if (upstream.body !== null && (type === null || !ALLOWED_RESPONSE_TYPES.has(type))) {
+    await upstream.body.cancel();
+    console.error("gateway proxy: refused response content type", {
+      requestId,
+      status: upstream.status,
+      contentType: type,
+    });
+    return errorResponse(502, "gateway_bad_response", "The gateway sent an unexpected response", requestId);
+  }
+
+  const responseHeaders = new Headers(HARDENING_HEADERS);
   for (const name of FORWARDED_RESPONSE_HEADERS) {
     const value = upstream.headers.get(name);
     if (value !== null) responseHeaders.set(name, value);

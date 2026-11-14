@@ -204,6 +204,85 @@ describe("forwardToGateway", () => {
     expect(response.headers.get("content-type")).toBe("application/json");
   });
 
+  it.each([
+    ["text/html; charset=utf-8", "<script>alert(document.cookie)</script>"],
+    ["image/svg+xml", '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>'],
+    ["text/plain", "<script>alert(1)</script>"],
+  ])("refuses a %s response so its body never renders on the console origin", async (contentType, body) => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    stubFetch(async () => new Response(body, { status: 200, headers: { "content-type": contentType } }));
+    const response = await forwardToGateway({
+      request: new Request("http://localhost:3000/api/gateway/v1/memories/mem_1"),
+      path: ["v1", "memories", "mem_1"],
+      accessToken: TOKEN,
+      gatewayUrl: GATEWAY,
+    });
+
+    expect(response.status).toBe(502);
+    expect(response.headers.get("content-type")).toBe("application/json");
+    const text = await response.text();
+    expect(text).not.toContain("<script");
+    expect(text).not.toContain("onload");
+    expect(JSON.parse(text)).toMatchObject({ code: "gateway_bad_response" });
+  });
+
+  it("refuses a body that has no content type, since a browser would sniff it", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const untyped = new Response(new Blob(["<html><script>alert(1)</script></html>"]).stream());
+    expect(untyped.headers.get("content-type")).toBeNull();
+    stubFetch(async () => untyped);
+    const response = await forwardToGateway({
+      request: new Request("http://localhost:3000/api/gateway/v1/me"),
+      path: ["v1", "me"],
+      accessToken: TOKEN,
+      gatewayUrl: GATEWAY,
+    });
+
+    expect(response.status).toBe(502);
+  });
+
+  it("accepts JSON with a charset parameter and bodiless responses", async () => {
+    stubFetch(async () => new Response('{"ok":true}', { headers: { "content-type": "Application/JSON; charset=utf-8" } }));
+    const json = await forwardToGateway({
+      request: new Request("http://localhost:3000/api/gateway/v1/me"),
+      path: ["v1", "me"],
+      accessToken: TOKEN,
+      gatewayUrl: GATEWAY,
+    });
+    expect(json.status).toBe(200);
+
+    stubFetch(async () => new Response(null, { status: 204 }));
+    const empty = await forwardToGateway({
+      request: new Request("http://localhost:3000/api/gateway/v1/memories/mem_1", { method: "DELETE" }),
+      path: ["v1", "memories", "mem_1"],
+      accessToken: TOKEN,
+      gatewayUrl: GATEWAY,
+    });
+    expect(empty.status).toBe(204);
+  });
+
+  it("sends nosniff and a sandboxing CSP on forwarded responses and on the proxy's own errors", async () => {
+    stubFetch(async () => Response.json({ ok: true }));
+    const forwarded = await forwardToGateway({
+      request: new Request("http://localhost:3000/api/gateway/v1/me"),
+      path: ["v1", "me"],
+      accessToken: TOKEN,
+      gatewayUrl: GATEWAY,
+    });
+    const ownError = await forwardToGateway({
+      request: new Request("http://localhost:3000/api/gateway/v1/me"),
+      path: ["v1", "me"],
+      accessToken: null,
+      gatewayUrl: GATEWAY,
+    });
+
+    for (const response of [forwarded, ownError]) {
+      expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(response.headers.get("content-security-policy")).toContain("sandbox");
+      expect(response.headers.get("content-security-policy")).toContain("default-src 'none'");
+    }
+  });
+
   it("streams an event stream through as chunks arrive instead of buffering it", async () => {
     let pushSecond!: () => void;
     const encoder = new TextEncoder();
