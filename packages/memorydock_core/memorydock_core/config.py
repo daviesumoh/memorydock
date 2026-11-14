@@ -14,10 +14,10 @@ SHARED_DB = "memorydock"
 DEV_DB_PREFIXES = ("memorydock_dev_", "memorydock_test_", "memorydock_verify")
 
 
-def check_database_for_env(env: str, db: str) -> None:
-    if env == "prod" and db != SHARED_DB:
+def check_database_for_env(env: str, database: str) -> None:
+    if env == "prod" and database != SHARED_DB:
         raise ValueError(f"ENV=prod requires the {SHARED_DB} database")
-    if env == "dev" and not db.startswith(DEV_DB_PREFIXES):
+    if env == "dev" and not database.startswith(DEV_DB_PREFIXES):
         raise ValueError("ENV=dev requires a database starting with " + ", ".join(DEV_DB_PREFIXES))
 
 
@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     extension_origin: str = ""
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     git_sha: str = ""
+    authkit_domain: str = ""
+    workos_client_id: str = ""
+    workos_api_key: SecretStr | None = None
+    identity_cache_seconds: int = 15
 
     @model_validator(mode="after")
     def _database_matches_env(self) -> Settings:
@@ -54,6 +58,11 @@ class Settings(BaseSettings):
         if value is None or not value.get_secret_value():
             raise MissingSetting(field.upper())
         return str(value.get_secret_value())
+
+    def require_authkit_domain(self) -> str:
+        if not self.authkit_domain:
+            raise MissingSetting("AUTHKIT_DOMAIN")
+        return self.authkit_domain.rstrip("/")
 
     def require_db(self) -> str:
         if not self.mongodb_db:

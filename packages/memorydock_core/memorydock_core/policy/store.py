@@ -89,9 +89,8 @@ class PolicyStore:
         backoff = 1.0
         while True:
             try:
-                async with await self.db.policy_heads.watch(
-                    max_await_time_ms=int(recheck_seconds * 1000)
-                ) as stream:
+                max_await_ms = int(recheck_seconds * 1000)
+                async with await repo.watch_head(self.db, max_await_ms=max_await_ms) as stream:
                     await self.reload()  # covers changes made while the stream was closed
                     backoff = 1.0
                     while True:

@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 from pymongo import AsyncMongoClient, MongoClient
+from pymongo.asynchronous.database import AsyncDatabase
 
 SERVER_SELECTION_TIMEOUT_MS = 5_000
 CONNECT_TIMEOUT_MS = 5_000
@@ -36,3 +37,7 @@ def async_client(uri: str, *, app_name: str) -> AsyncMongoClient[dict[str, Any]]
         connectTimeoutMS=CONNECT_TIMEOUT_MS,
         tz_aware=True,
     )
+
+
+async def ping(db: AsyncDatabase[dict[str, Any]]) -> None:
+    await db.command("ping")

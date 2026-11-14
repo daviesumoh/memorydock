@@ -9,6 +9,7 @@ dependencies = [
     "mcp>=2.3",
     "memorydock-core",
     "pydantic>=2.14",
+    "pymongo>=4.20",
     "starlette>=1.10",
     "uvicorn[standard]>=0.54",
 ]
