@@ -48,7 +48,8 @@ export interface paths {
         /** Memories the signed-in user may read, newest first */
         get: operations["list_memories"];
         put?: never;
-        post?: never;
+        /** Save a memory as the signed-in user; 201 when new, 200 when it already existed */
+        post: operations["create_memory"];
         delete?: never;
         options?: never;
         head?: never;
@@ -83,6 +84,23 @@ export interface paths {
         get: operations["list_memory_versions"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/memories/{memory_id}/forget": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Forget a memory: its content is erased from it and every version */
+        post: operations["forget_memory"];
         delete?: never;
         options?: never;
         head?: never;
@@ -179,6 +197,14 @@ export interface components {
         ErrorResponse: {
             error: components["schemas"]["ErrorBody"];
         };
+        /** ForgetRequest */
+        ForgetRequest: {
+            /**
+             * Reason
+             * @description Required by policy for memories outside the user's own scope
+             */
+            reason?: string | null;
+        };
         /** Forgotten */
         Forgotten: {
             /** By */
@@ -207,6 +233,26 @@ export interface components {
             teams: string[];
             /** Projects */
             projects: components["schemas"]["ProjectMembership"][];
+        };
+        /** MemoryCreate */
+        MemoryCreate: {
+            /**
+             * Content
+             * @description One idea
+             */
+            content: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "fact" | "decision" | "preference" | "procedure" | "finding" | "open_question" | "episode";
+            /**
+             * Scope
+             * @description Who should see it; defaults to the signed-in user only
+             */
+            scope?: ("user" | "project" | "team" | "org") | null;
+            /** Entities */
+            entities?: string[] | null;
         };
         /**
          * MemoryOut
@@ -579,6 +625,75 @@ export interface operations {
             };
         };
     };
+    create_memory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryOut"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not implemented yet */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     get_memory: {
         parameters: {
             query?: never;
@@ -671,6 +786,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemoryVersionPage"];
+                };
+            };
+            /** @description Not signed in */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid input */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not implemented yet */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    forget_memory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Memory id */
+                memory_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryOut"];
                 };
             };
             /** @description Not signed in */

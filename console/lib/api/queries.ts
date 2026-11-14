@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
 import { gateway } from "./client";
 import { unwrap } from "./errors";
@@ -6,6 +6,7 @@ import type { operations } from "./schema";
 
 export type MemoryFilters = NonNullable<operations["list_memories"]["parameters"]["query"]>;
 export type AuditFilters = NonNullable<operations["list_audit"]["parameters"]["query"]>;
+export type MemoryCreate = operations["create_memory"]["requestBody"]["content"]["application/json"];
 
 const PAGE_SIZE = 25;
 
@@ -59,5 +60,34 @@ export function useAudit(filters: Omit<AuditFilters, "limit" | "cursor">) {
         }),
       ),
     getNextPageParam: (page) => page.next_cursor ?? undefined,
+  });
+}
+
+// A write changes the memory, its history, every list it appears in and the audit log.
+function refreshAfterWrite(client: QueryClient, memoryId: string) {
+  for (const key of [["memory", memoryId], ["memory-versions", memoryId], ["memories"], ["audit"]]) {
+    void client.invalidateQueries({ queryKey: key });
+  }
+}
+
+export function useCreateMemory() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: MemoryCreate) => unwrap(await gateway.POST("/v1/memories", { body })),
+    onSuccess: (memory) => refreshAfterWrite(client, memory.id),
+  });
+}
+
+export function useForgetMemory(memoryId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (reason: string | null) =>
+      unwrap(
+        await gateway.POST("/v1/memories/{memory_id}/forget", {
+          params: { path: { memory_id: memoryId } },
+          body: { reason },
+        }),
+      ),
+    onSuccess: () => refreshAfterWrite(client, memoryId),
   });
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { ForgetMemoryDialog } from "@/components/forget-memory-dialog";
 import { StatusBadge, TypeBadge } from "@/components/memory-badges";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,11 @@ export function MemoryDetail({ memoryId }: { memoryId: string }) {
           <TypeBadge type={memory.type} />
           <StatusBadge status={memory.status} />
           <span className="text-muted-foreground font-mono text-xs">{memory.id}</span>
+          {memory.status === "forgotten" ? null : (
+            <div className="ml-auto">
+              <ForgetMemoryDialog memory={memory} />
+            </div>
+          )}
         </div>
         {memory.forgotten ? (
           <Alert>
