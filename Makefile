@@ -1,4 +1,4 @@
-.PHONY: setup hooks lint scan privacy test openapi gateway check-env atlas-setup atlas-roles verify-preview test-integration
+.PHONY: setup hooks lint scan privacy test openapi gateway check-env policy-dev atlas-setup atlas-roles verify-preview test-integration
 
 PY_SOURCES := packages services scripts tests
 # deptry runs per package directory so each package is checked against its own dependencies.
@@ -34,6 +34,10 @@ openapi:
 # Local gateway on 127.0.0.1:8000 with reload; run it in your own terminal.
 gateway:
 	uv run uvicorn --factory memorydock_gateway.app:create_app --host 127.0.0.1 --port 8000 --reload
+
+# Publishes policies/ to your own database and activates it without a prompt.
+policy-dev:
+	uv run python scripts/policy_publish.py --activate --yes
 
 check-env:
 	uv run python scripts/check_env.py
