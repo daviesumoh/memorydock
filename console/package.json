@@ -8,12 +8,16 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "gen:api": "openapi-typescript ../docs/openapi.json -o lib/api/schema.d.ts",
+    "gen:api:check": "openapi-typescript ../docs/openapi.json -o lib/api/schema.d.ts --check",
+    "predev": "msw init public"
   },
   "dependencies": {
     "@workos-inc/authkit-nextjs": "4.6.3",
     "@workos-inc/node": "^12",
     "next": "16.4.6",
+    "openapi-fetch": "^0.17.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "0.0.1"
@@ -26,6 +30,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "msw": "^3.0.5",
+    "openapi-typescript": "^7.13.0",
     "tailwindcss": "4.3.3",
     "typescript": "^5",
     "vitest": "5.1.0"
