@@ -1,0 +1,3 @@
+#!/bin/sh
+# Runs the secret scan as part of the privacy check.
+exec uv run --frozen --quiet python scripts/privacy_check.py

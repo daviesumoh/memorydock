@@ -1,0 +1,2 @@
+#!/bin/sh
+exec uv run --frozen --quiet python scripts/check_attribution.py "$1"

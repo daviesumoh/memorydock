@@ -1,0 +1,41 @@
+[project]
+name = "memorydock-workspace"
+version = "0.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "deptry",
+    "detect-secrets",
+    "mypy",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "vulture",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+check_untyped_defs = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["scripts"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
