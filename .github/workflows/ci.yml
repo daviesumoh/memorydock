@@ -55,6 +55,59 @@ jobs:
           exit 1
       - run: make test-integration
 
+  console:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: console
+    # Placeholders: the build and smoke tests never reach WorkOS or a gateway.
+    env:
+      WORKOS_CLIENT_ID: client_ci_placeholder
+      NEXT_PUBLIC_WORKOS_REDIRECT_URI: http://localhost:3000/callback
+      GATEWAY_URL: http://127.0.0.1:9
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Cookie password for the build
+        run: echo "WORKOS_COOKIE_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+      - name: Generated API types are up to date
+        run: pnpm gen:api:check
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm test:e2e
+
+  extension:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: clients/extension
+    env:
+      GATEWAY_URL: http://127.0.0.1:8000
+      AUTHKIT_DOMAIN: https://ci-placeholder.authkit.app
+      CONSOLE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+
   hygiene:
     runs-on: ubuntu-latest
     timeout-minutes: 5
