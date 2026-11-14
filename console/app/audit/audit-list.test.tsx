@@ -32,6 +32,13 @@ afterEach(() => {
 afterAll(() => server.close());
 
 describe("audit list", () => {
+  it("shows the policy version that decided and the result", async () => {
+    renderWithQueries(<AuditList />);
+    expect(await screen.findByText("one-holder-per-file · v3f9c2a1b7d4e")).toBeTruthy();
+    expect(screen.getByText("denied")).toBeTruthy();
+    expect(screen.getByText("pending_approval")).toBeTruthy();
+  });
+
   it("shows each decision as a word, not only a colour", async () => {
     renderWithQueries(<AuditList />);
     expect(await screen.findByText("deny")).toBeTruthy();

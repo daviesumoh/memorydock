@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Query
+from memorydock_core.audit.verify import verify_chain
 from memorydock_core.audit.visibility import Visibility, visibility
 from memorydock_core.errors import Forbidden
 from memorydock_core.models.audit import (
@@ -13,6 +14,7 @@ from memorydock_core.models.audit import (
     AuditPage,
     AuditResource,
 )
+from memorydock_core.models.common import ApiModel
 from memorydock_core.paging import MAX_LIMIT, decode_cursor, encode_cursor
 from memorydock_core.policy import entities as E
 from memorydock_core.policy.authorize import authorize
@@ -33,6 +35,44 @@ router = APIRouter(prefix="/v1", tags=["console"], responses=ERROR_RESPONSES)
 MAX_SCANNED = 500
 
 Fetch = Callable[[int | None, int], Awaitable[list[dict[str, Any]]]]
+
+
+class AuditVerifyOut(ApiModel):
+    ok: bool
+    checked: int
+    first_bad_seq: int | None
+    reason: str
+
+
+@router.get(
+    "/audit/verify",
+    operation_id="verify_audit",
+    summary="Recompute the signed-in user's org audit chain (org admins only)",
+)
+async def verify_audit(p: CurrentPrincipal) -> AuditVerifyOut:
+    runtime = state.current()
+    decision = authorize(
+        runtime.policy.pdp,
+        p,
+        "audit.verify",
+        uid("AuditView", p.tenant_id),
+        [E.audit_view(p.tenant_id)],
+    )
+    if not decision.allowed:
+        # No policy named means no permit: the caller isn't an org admin.
+        message = (
+            f"policy does not allow this: {decision.reason}"
+            if decision.policy_ids
+            else "only org admins can verify the audit chain"
+        )
+        raise Forbidden(message, code="policy_denied")
+    result = await verify_chain(runtime.db, p.tenant_id)
+    return AuditVerifyOut(
+        ok=result.ok,
+        checked=result.checked,
+        first_bad_seq=result.first_bad_seq,
+        reason=result.reason,
+    )
 
 
 @router.get(

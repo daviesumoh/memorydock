@@ -96,6 +96,11 @@ export const handlers = [
     return pageResponse(paginate(versions, (v) => v.id, new URL(request.url).searchParams));
   }),
 
+  // Registered before /v1/audit so the list handler never answers it.
+  http.get(gatewayPath("/v1/audit/verify"), () =>
+    HttpResponse.json({ ok: true, checked: auditEntries.length, first_bad_seq: null, reason: "chain verifies" }),
+  ),
+
   http.get(gatewayPath("/v1/audit"), ({ request }) => {
     const params = new URL(request.url).searchParams;
     // Placeholder entries carry no id, so paging keys on seq.

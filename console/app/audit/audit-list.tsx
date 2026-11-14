@@ -22,6 +22,12 @@ function actorText(actor: Schemas["AuditActor"]): string {
   return `${actor.user_id} · ${actor.client ?? "unknown client"} via ${actor.via}`;
 }
 
+// Which policies decided, and under which published version of them.
+function policyText(decision: Schemas["AuditDecision"]): string {
+  const ids = decision.policy_ids.join(", ") || "None";
+  return decision.policy_version ? `${ids} · v${decision.policy_version}` : ids;
+}
+
 function resourceText(resource: Schemas["AuditResource"]): string {
   return resource.id ? `${resource.type} ${resource.id}` : resource.type;
 }
@@ -51,13 +57,14 @@ export function AuditList() {
           <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[6%]">Seq</TableHead>
-                <TableHead className="w-[14%]">Time (UTC)</TableHead>
-                <TableHead className="w-[14%]">Action</TableHead>
-                <TableHead className="w-[20%]">Actor</TableHead>
-                <TableHead className="w-[18%]">Resource</TableHead>
-                <TableHead className="w-[12%]">Decision</TableHead>
-                <TableHead className="w-[16%]">Policy</TableHead>
+                <TableHead className="w-[5%]">Seq</TableHead>
+                <TableHead className="w-[13%]">Time (UTC)</TableHead>
+                <TableHead className="w-[13%]">Action</TableHead>
+                <TableHead className="w-[18%]">Actor</TableHead>
+                <TableHead className="w-[16%]">Resource</TableHead>
+                <TableHead className="w-[10%]">Decision</TableHead>
+                <TableHead className="w-[15%]">Policy</TableHead>
+                <TableHead className="w-[10%]">Result</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -74,14 +81,15 @@ export function AuditList() {
                     <TableRow key={entry.seq}>
                       {seq}
                       {time}
-                      <TableCell colSpan={5} className="text-muted-foreground align-top italic">
+                      <TableCell colSpan={6} className="text-muted-foreground align-top italic">
                         Personal activity
                       </TableCell>
                     </TableRow>
                   );
                 }
                 const memoryId = entry.resource.type === "memory" ? entry.resource.id : null;
-                const policies = entry.decision.policy_ids.join(", ") || "None";
+                const policies = policyText(entry.decision);
+                const result = entry.result_status ?? "None";
                 return (
                   <TableRow key={entry.seq}>
                     {seq}
@@ -105,6 +113,9 @@ export function AuditList() {
                     </TableCell>
                     <TruncatedCell fullText={policies} className="font-mono text-xs">
                       {policies}
+                    </TruncatedCell>
+                    <TruncatedCell fullText={result} className="font-mono text-xs">
+                      {result}
                     </TruncatedCell>
                   </TableRow>
                 );
