@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, NoReturn
 
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.client_session import AsyncClientSession
@@ -51,7 +51,7 @@ class Op:
 
         await run_transaction(self.client, write)
 
-    async def refuse(self, action: str, resource: Resource, decision: Decision) -> None:
+    async def refuse(self, action: str, resource: Resource, decision: Decision) -> NoReturn:
         """Audit a denied or approval-gated request, then raise. Raises always."""
         await self.audit_only(
             events.by_principal(
