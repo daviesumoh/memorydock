@@ -31,7 +31,7 @@ test("the gateway proxy refuses a write from another origin", async ({ request }
   });
 
   expect(response.status()).toBe(403);
-  expect((await response.json()).code).toBe("cross_origin_request");
+  expect((await response.json()).error.code).toBe("cross_origin_request");
 });
 
 test("the gateway proxy answers 401 JSON, not a redirect, without a session", async ({ request }) => {
@@ -39,6 +39,6 @@ test("the gateway proxy answers 401 JSON, not a redirect, without a session", as
 
   expect(response.status()).toBe(401);
   const body = await response.json();
-  expect(body.code).toBe("not_signed_in");
-  expect(body.request_id).toBe(response.headers()["x-request-id"]);
+  expect(body.error.code).toBe("not_signed_in");
+  expect(body.error.request_id).toBe(response.headers()["x-request-id"]);
 });

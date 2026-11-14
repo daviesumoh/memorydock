@@ -121,7 +121,7 @@ describe("forwardToGateway", () => {
     });
 
     expect(response.status).toBe(401);
-    expect(await response.json()).toMatchObject({ code: "not_signed_in" });
+    expect(await response.json()).toMatchObject({ error: { code: "not_signed_in" } });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -138,7 +138,7 @@ describe("forwardToGateway", () => {
     });
 
     expect(response.status).toBe(403);
-    expect(await response.json()).toMatchObject({ code: "cross_origin_request" });
+    expect(await response.json()).toMatchObject({ error: { code: "cross_origin_request" } });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -152,7 +152,7 @@ describe("forwardToGateway", () => {
     });
 
     expect(response.status).toBe(404);
-    expect(await response.json()).toMatchObject({ code: "not_found" });
+    expect(await response.json()).toMatchObject({ error: { code: "not_found" } });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -235,7 +235,7 @@ describe("forwardToGateway", () => {
   it("passes gateway errors through with their status and body", async () => {
     stubFetch(async () =>
       Response.json(
-        { code: "session_revoked", message: "Session revoked", request_id: "req_gw" },
+        { error: { code: "session_revoked", message: "Session revoked", request_id: "req_gw" } },
         { status: 403, headers: { "x-request-id": "req_gw" } },
       ),
     );
@@ -248,7 +248,7 @@ describe("forwardToGateway", () => {
 
     expect(response.status).toBe(403);
     expect(response.headers.get("x-request-id")).toBe("req_gw");
-    expect(await response.json()).toMatchObject({ code: "session_revoked" });
+    expect(await response.json()).toMatchObject({ error: { code: "session_revoked" } });
   });
 
   it("never passes Set-Cookie from the gateway to the browser", async () => {
@@ -286,7 +286,7 @@ describe("forwardToGateway", () => {
     const text = await response.text();
     expect(text).not.toContain("<script");
     expect(text).not.toContain("onload");
-    expect(JSON.parse(text)).toMatchObject({ code: "gateway_bad_response" });
+    expect(JSON.parse(text)).toMatchObject({ error: { code: "gateway_bad_response" } });
   });
 
   it("refuses a body that has no content type, since a browser would sniff it", async () => {
@@ -394,8 +394,8 @@ describe("forwardToGateway", () => {
 
     expect(response.status).toBe(502);
     const body = await response.json();
-    expect(body).toMatchObject({ code: "gateway_unreachable" });
-    expect(body.request_id).toBe(response.headers.get("x-request-id"));
+    expect(body).toMatchObject({ error: { code: "gateway_unreachable" } });
+    expect(body.error.request_id).toBe(response.headers.get("x-request-id"));
     expect(JSON.stringify(body)).not.toContain(TOKEN);
     expectTokenNeverLogged(spies);
   });
@@ -420,7 +420,7 @@ describe("forwardToGateway", () => {
     const response = await pending;
 
     expect(response.status).toBe(504);
-    expect(await response.json()).toMatchObject({ code: "gateway_timeout" });
+    expect(await response.json()).toMatchObject({ error: { code: "gateway_timeout" } });
     expectTokenNeverLogged(spies);
   });
 
