@@ -20,10 +20,11 @@ PHASE_1 = {
     "memory_versions",
     "forget_blocklist",
 }
+COLLECTIONS = PHASE_1 | {"leases"}
 
 
-def test_phase_one_collections_have_validators():
-    assert set(LAYOUT.collections) == PHASE_1
+def test_every_expected_collection_has_a_validator():
+    assert set(LAYOUT.collections) == COLLECTIONS
 
 
 def test_every_indexed_collection_has_a_validator():
@@ -37,14 +38,14 @@ def _json_schema(validator):
     return next(part["$jsonSchema"] for part in validator["$and"] if "$jsonSchema" in part)
 
 
-@pytest.mark.parametrize("name", sorted(PHASE_1))
+@pytest.mark.parametrize("name", sorted(COLLECTIONS))
 def test_validator_requires_id_and_lists_every_required_property(name):
     schema = _json_schema(LAYOUT.validators[name])
     assert "_id" in schema["required"]
     assert set(schema["required"]) <= set(schema["properties"])
 
 
-@pytest.mark.parametrize("name", sorted(PHASE_1 - UNTENANTED))
+@pytest.mark.parametrize("name", sorted(COLLECTIONS - UNTENANTED))
 def test_tenant_collections_require_tenant_id_and_timestamps(name):
     required = set(_json_schema(LAYOUT.validators[name])["required"])
     assert "tenant_id" in required
