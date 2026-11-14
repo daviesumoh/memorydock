@@ -1,0 +1,36 @@
+# Later rules win, so ownership by area comes first and shared paths last.
+
+* @daviesumoh
+
+# Platform and agent side
+/infra/                                          @daviesumoh
+/scripts/                                        @daviesumoh
+/policies/                                       @daviesumoh
+/packages/memorydock_core/                       @daviesumoh
+/services/                                       @daviesumoh
+/clients/cli/                                    @daviesumoh
+/clients/claude-plugin/                          @daviesumoh
+
+# Surfaces and integrations
+/console/                                        @jsiva04
+/clients/extension/                              @jsiva04
+/services/gateway/memorydock_gateway/api/console/ @jsiva04
+/services/gateway/memorydock_gateway/tools/connector.py @jsiva04
+/services/gateway/memorydock_gateway/tools/actions.py   @jsiva04
+/services/gateway/memorydock_gateway/webhooks/github.py @jsiva04
+/packages/memorydock_core/memorydock_core/actions/      @jsiva04
+/packages/memorydock_core/memorydock_core/influence/    @jsiva04
+/tests/isolation/                                @jsiva04
+/tests/influence/                                @jsiva04
+/scripts/demo_check.py                           @jsiva04
+/docs/RUNBOOK_DEMO.md                            @jsiva04
+
+# Shared: changes need the other developer's review
+/policies/                                       @daviesumoh @jsiva04
+/infra/                                          @daviesumoh @jsiva04
+/packages/memorydock_core/memorydock_core/repo/  @daviesumoh @jsiva04
+/services/gateway/memorydock_gateway/auth.py     @daviesumoh @jsiva04
+/services/gateway/memorydock_gateway/app.py      @daviesumoh @jsiva04
+/services/gateway/memorydock_gateway/middleware.py @daviesumoh @jsiva04
+/docs/openapi.json                               @daviesumoh @jsiva04
+/.github/                                        @daviesumoh @jsiva04
