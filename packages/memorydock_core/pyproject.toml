@@ -10,6 +10,7 @@ dependencies = [
     "python-ulid>=4.1",
     "rfc8785>=0.1",
     "cedarpy>=4.12",
+    "httpx>=0.28",
 ]
 
 [build-system]

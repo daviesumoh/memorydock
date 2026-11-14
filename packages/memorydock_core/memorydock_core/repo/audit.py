@@ -13,7 +13,7 @@ from pymongo.errors import DuplicateKeyError
 from memorydock_core.audit.chain import GENESIS, entry_hash, truncate_ms
 from memorydock_core.audit.events import AuditEvent
 from memorydock_core.ids import new_id
-from memorydock_core.principal import SystemContext
+from memorydock_core.principal import Principal, SystemContext
 from memorydock_core.txn import ConflictRetry
 
 Db = AsyncDatabase[dict[str, Any]]
@@ -22,7 +22,7 @@ Db = AsyncDatabase[dict[str, Any]]
 async def append(
     db: Db,
     session: AsyncClientSession,
-    ctx: SystemContext,
+    ctx: SystemContext | Principal,
     event: AuditEvent,
     *,
     now: datetime | None = None,
