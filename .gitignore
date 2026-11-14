@@ -1,0 +1,55 @@
+# Environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials*.json
+service-account*.json
+.netrc
+
+# Agent and personal working files
+BUILD_PROMPT.md
+CLAUDE.md
+.claude/
+.codex/
+.local/
+*.private.md
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+console/.env.local
+clients/extension/.env.local
+clients/extension/dist/
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.auth/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/*
+!.vscode/extensions.json
