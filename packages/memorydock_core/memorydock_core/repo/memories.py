@@ -11,6 +11,7 @@ from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.asynchronous.database import AsyncDatabase
 
 from memorydock_core.ids import new_id
+from memorydock_core.principal import Principal
 from memorydock_core.recall import ranking
 from memorydock_core.txn import ConflictRetry
 
@@ -82,6 +83,45 @@ async def get_in_scopes(
         {"_id": memory_id, "tenant_id": tenant, "scope_key": {"$in": list(scopes)}},
         session=session,
     )
+
+
+async def page_in_scopes(
+    db: Db,
+    ctx: Principal,
+    *,
+    before_id: str | None,
+    limit: int,
+    status: str | None = None,
+    type: str | None = None,
+) -> list[dict[str, Any]]:
+    """Every memory in the caller's scopes, any status, newest first (ids sort by time).
+    For browsing; recall uses ranking.live_recheck instead."""
+    query: dict[str, Any] = {
+        "tenant_id": ctx.tenant_id,
+        "scope_key": {"$in": sorted(ctx.user.scopes)},
+    }
+    if before_id is not None:
+        query["_id"] = {"$lt": before_id}
+    if status is not None:
+        query["status"] = status
+    if type is not None:
+        query["type"] = type
+    cursor = db.memories.find(query).sort("_id", -1).limit(limit)
+    return [doc async for doc in cursor]
+
+
+async def versions_before(
+    db: Db, ctx: Principal, memory_id: str, *, before_version: int | None, limit: int
+) -> list[dict[str, Any]]:
+    """A memory's versions, newest first. Checks the memory is in the caller's scopes first,
+    so an id from another scope lists nothing."""
+    if await get_in_scopes(db, ctx.tenant_id, ctx.user.scopes, memory_id) is None:
+        return []
+    query: dict[str, Any] = {"memory_id": memory_id, "tenant_id": ctx.tenant_id}
+    if before_version is not None:
+        query["version"] = {"$lt": before_version}
+    cursor = db.memory_versions.find(query).sort("version", -1).limit(limit)
+    return [doc async for doc in cursor]
 
 
 async def purge(
