@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     workos_api_key: SecretStr | None = None
     identity_cache_seconds: int = 15
     recall_token_budget: int = Field(default=1500, ge=100, le=20000)
+    openai_api_key: SecretStr | None = None
+    distill_model: str = "gpt-6-luna"
 
     @model_validator(mode="after")
     def _database_matches_env(self) -> Settings:

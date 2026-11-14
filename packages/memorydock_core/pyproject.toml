@@ -11,6 +11,8 @@ dependencies = [
     "rfc8785>=0.1",
     "cedarpy>=4.12",
     "httpx>=0.28",
+    "langmem>=0.0.30",
+    "langchain-openai>=1.8.0",
 ]
 
 [build-system]

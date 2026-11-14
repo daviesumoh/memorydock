@@ -14,7 +14,7 @@ async def test_phase_one_tools_are_registered(tools):
     _, by_name = tools
     assert set(by_name) == {
         "whoami", "recall", "remember", "forget_memory",
-        "acquire_lease", "release_lease", "list_leases",
+        "acquire_lease", "release_lease", "list_leases", "capture_conversation",
     }  # fmt: skip
 
 
