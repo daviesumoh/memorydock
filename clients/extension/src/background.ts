@@ -18,15 +18,23 @@ const settings: OAuthSettings = {
   resource: `${GATEWAY_URL.replace(/\/+$/, "")}/mcp`,
 };
 
-// storage.local is readable by content scripts unless restricted, and it holds
-// the refresh token. Older Chrome versions reject the call; say so and go on.
-chrome.storage.local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" }).catch(() => {
-  console.warn("memorydock: could not restrict storage.local to extension pages");
-});
-
-const tokens = new TokenStore(chrome.storage.session, chrome.storage.local, (refreshToken) =>
-  refreshTokens(settings, refreshToken),
-);
+// storage.local is readable by content scripts unless restricted. If Chrome
+// will not restrict it, the refresh token stays in storage.session instead
+// (extension pages only by default): sign-in then ends when the browser
+// closes, but the token is never where a content script can read it.
+const tokensReady: Promise<TokenStore> = chrome.storage.local
+  .setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" })
+  .then(
+    () => chrome.storage.local,
+    () => {
+      console.warn("memorydock: storage.local could not be restricted; sign-in will not survive a restart");
+      return chrome.storage.session;
+    },
+  )
+  .then(
+    (refreshArea) =>
+      new TokenStore(chrome.storage.session, refreshArea, (refreshToken) => refreshTokens(settings, refreshToken)),
+  );
 
 async function signIn(): Promise<Reply> {
   const verifier = createVerifier();
@@ -43,12 +51,13 @@ async function signIn(): Promise<Reply> {
   }
   if (!redirectedTo) return { ok: false, error: "sign_in_cancelled" };
   const code = codeFromRedirect(settings, redirectedTo, state);
+  const tokens = await tokensReady;
   await tokens.save(await exchangeCode(settings, code, verifier));
   return { ok: true };
 }
 
 async function account(): Promise<Reply> {
-  const accessToken = await tokens.accessToken();
+  const accessToken = await (await tokensReady).accessToken();
   if (!accessToken) return { ok: true, email: null };
   let response: Response;
   try {
@@ -71,7 +80,7 @@ async function account(): Promise<Reply> {
 async function handle(message: ExtensionMessage): Promise<Reply> {
   switch (message.type) {
     case "get_status": {
-      const signedIn = await tokens.isSignedIn();
+      const signedIn = await (await tokensReady).isSignedIn();
       // No project is enabled until the mappings route exists, so capture
       // stays off; page facts come from the DOM contract once it is served.
       const page = message.page ?? { drift: false, temporaryChat: false, conversationId: null, projectId: null };
@@ -83,7 +92,7 @@ async function handle(message: ExtensionMessage): Promise<Reply> {
     case "sign_in":
       return signIn();
     case "sign_out":
-      await tokens.clear();
+      await (await tokensReady).clear();
       return { ok: true };
   }
 }

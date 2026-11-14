@@ -100,6 +100,27 @@ describe("TokenStore", () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
+  it("does not sign back in when a refresh finishes after sign-out", async () => {
+    let release!: () => void;
+    const refresh = vi.fn(
+      () =>
+        new Promise<TokenSet>((resolve) => {
+          release = () => resolve(tokens(2));
+        }),
+    );
+    const { store, session, local } = setup(refresh);
+    await store.save(tokens(1, 0));
+
+    const pending = store.accessToken();
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
+    await store.clear();
+    release();
+
+    expect(await pending).toBeNull();
+    expect(await store.isSignedIn()).toBe(false);
+    expect(session.data.size + local.data.size).toBe(0);
+  });
+
   it("forgets both tokens on sign-out", async () => {
     const { store, session, local } = setup();
     await store.save(tokens(1));
