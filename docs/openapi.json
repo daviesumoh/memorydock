@@ -1,0 +1,67 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "memorydock gateway",
+    "version": "0.0.0",
+    "description": "Placeholder so the console's type generation has an input. The Phase 1 contract replaces this file with the export from the gateway (make openapi)."
+  },
+  "paths": {
+    "/v1/me": {
+      "get": {
+        "operationId": "get_me",
+        "summary": "The signed-in user",
+        "responses": {
+          "200": {
+            "description": "The signed-in user",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Me" }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Me": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["user_id", "email", "org_id"],
+        "properties": {
+          "user_id": { "type": "string" },
+          "email": { "type": "string" },
+          "org_id": { "type": "string" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error"],
+        "properties": {
+          "error": { "$ref": "#/components/schemas/ErrorBody" }
+        }
+      },
+      "ErrorBody": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message", "request_id"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "request_id": { "type": "string" },
+          "field": { "type": "string" }
+        }
+      }
+    }
+  }
+}
