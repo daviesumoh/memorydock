@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   { href: "/memories", label: "Memories" },
   { href: "/audit", label: "Audit" },
+  { href: "/sessions", label: "Sessions" },
 ] as const;
 
 // Rendered without a current page while the pathname is unknown (the static

@@ -2,7 +2,7 @@ import { http, HttpResponse } from "msw";
 
 import type { Schemas } from "@/lib/api/client";
 
-import { auditEntries, memories, memoryVersions, ROSA } from "./fixtures";
+import { auditEntries, CONSOLE_SESSION, memories, memoryVersions, ROSA, sessions } from "./fixtures";
 import { paginate, type PageResult } from "./paging";
 
 // Fictional demo data only. These stand in for gateway routes that are still
@@ -94,6 +94,22 @@ export const handlers = [
       },
     ];
     return pageResponse(paginate(versions, (v) => v.id, new URL(request.url).searchParams));
+  }),
+
+  http.get(gatewayPath("/v1/sessions"), () =>
+    HttpResponse.json({ items: sessions, current_session_id: CONSOLE_SESSION } satisfies Schemas["SessionList"]),
+  ),
+
+  http.post(gatewayPath("/v1/sessions/:id/:action"), ({ params }) => {
+    const found = sessions.find((s) => s.id === params.id);
+    if (!found) return errorResponse(404, "not_found", "no such session");
+    if (found.id === CONSOLE_SESSION) {
+      return errorResponse(409, "current_session", "this is the session the console is using");
+    }
+    const to = { pause: "paused", resume: "active", revoke: "revoked" }[String(params.action)];
+    return to
+      ? HttpResponse.json({ ...found, status: to as Schemas["SessionOut"]["status"] })
+      : errorResponse(404, "not_found", "no such route");
   }),
 
   // Registered before /v1/audit so the list handler never answers it.
