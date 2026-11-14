@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 from memorydock_core.policy import entities as E
-from memorydock_core.policy.authorize import authorize, principal_entities
+from memorydock_core.policy.authorize import authorize
 from memorydock_core.policy.bundle import load_dir
 from memorydock_core.policy.pdp import PDP, uid
 from memorydock_core.principal import Principal, ProjectRef, UserIdentity
@@ -109,7 +109,7 @@ def test_a_missing_resource_entity_fails_closed(pdp):
 
 def test_principal_entities_carry_teams_and_admin_flag():
     p = principal(roles=("admin",))
-    by_type = {e["uid"]["type"].split("::")[-1]: e for e in principal_entities(p)}
+    by_type = {e["uid"]["type"].split("::")[-1]: e for e in E.for_principal(p)}
     assert set(by_type) == {"Org", "Team", "User", "AgentSession"}
     assert by_type["User"]["attrs"]["isOrgAdmin"] is True
     assert {"type": "Memorydock::Team", "id": f"{H}/product"} in by_type["User"]["parents"]
