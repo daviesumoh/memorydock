@@ -1,0 +1,36 @@
+# The deployed gateway. Secrets (MONGODB_URI, WORKOS_API_KEY, AUTHKIT_DOMAIN, WORKOS_CLIENT_ID)
+# are set with `fly secrets`, never here. Deploy with scripts/deploy.sh.
+
+app = "memorydock-gateway"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ENV = "prod"
+  MONGODB_DB = "memorydock"
+  GATEWAY_BASE_URL = "https://memorydock-gateway.fly.dev"
+  CONSOLE_ORIGIN = "https://memorydock-console.vercel.app"
+  AUTOEMBED_MODEL = "voyage-4"
+  LOG_LEVEL = "INFO"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # One machine stays up: it holds the policy watch, and a cold start would cost the demo
+  # several seconds on the first call.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/readyz"
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "30s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
