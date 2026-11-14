@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from pymongo import ReturnDocument
+from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.asynchronous.database import AsyncDatabase
 from pymongo.errors import DuplicateKeyError
 
@@ -46,8 +47,12 @@ async def daily_mcp_session(
     raise RuntimeError("could not create or read the daily MCP session")
 
 
-async def get(db: Db, tenant: str, session_id: str) -> dict[str, Any] | None:
-    return await db.agent_sessions.find_one({"_id": session_id, "tenant_id": tenant})
+async def get(
+    db: Db, tenant: str, session_id: str, session: AsyncClientSession | None = None
+) -> dict[str, Any] | None:
+    return await db.agent_sessions.find_one(
+        {"_id": session_id, "tenant_id": tenant}, session=session
+    )
 
 
 async def touch(db: Db, tenant: str, session_id: str, now: datetime) -> None:
@@ -60,4 +65,31 @@ async def touch(db: Db, tenant: str, session_id: str, now: datetime) -> None:
             "last_seen_at": {"$lt": ts - LAST_SEEN_GRANULARITY},
         },
         {"$set": {"last_seen_at": ts}},
+    )
+
+
+async def list_for(db: Db, tenant: str, *, user_id: str | None, limit: int) -> list[dict[str, Any]]:
+    """Newest first. user_id None lists the whole tenant (org admins only; callers check)."""
+    query: dict[str, Any] = {"tenant_id": tenant}
+    if user_id is not None:
+        query["user_id"] = user_id
+    cursor = db.agent_sessions.find(query).sort([("started_at", -1), ("_id", -1)]).limit(limit)
+    return [d async for d in cursor]
+
+
+async def set_status(
+    db: Db,
+    session: AsyncClientSession,
+    tenant: str,
+    session_id: str,
+    *,
+    expected: str,
+    fields: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Move a session out of `expected` only; None when it is no longer in that state."""
+    return await db.agent_sessions.find_one_and_update(
+        {"_id": session_id, "tenant_id": tenant, "status": expected},
+        {"$set": fields},
+        return_document=ReturnDocument.AFTER,
+        session=session,
     )
