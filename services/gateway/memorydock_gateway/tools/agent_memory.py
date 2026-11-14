@@ -3,12 +3,16 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastmcp import FastMCP
-from fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from memorydock_core.ids import id_pattern
+from memorydock_core.memory import service as memory
 from memorydock_core.models.common import MemoryType, ScopeLevel
-from memorydock_core.models.mcp import ForgetResult, RecallResult, RememberResult
+from memorydock_core.models.mcp import ForgetResult, RecalledMemory, RecallResult, RememberResult
+from memorydock_core.recall import service as recall_service
 from pydantic import Field
+
+from memorydock_gateway import state
+from memorydock_gateway.tool_support import op, tool_errors
 
 
 def register(mcp: FastMCP) -> None:
@@ -22,6 +26,7 @@ def register(mcp: FastMCP) -> None:
         ),
         annotations=ToolAnnotations(read_only_hint=True, open_world_hint=False),
     )
+    @tool_errors
     async def recall(
         query: Annotated[str, Field(min_length=1, max_length=2000, description="What to look for")],
         k: Annotated[int, Field(ge=1, le=20, description="Maximum memories to return")] = 8,
@@ -34,7 +39,28 @@ def register(mcp: FastMCP) -> None:
             ),
         ] = None,
     ) -> RecallResult:
-        raise ToolError("not_implemented: recall is not implemented yet")
+        result = await recall_service.recall(
+            await op(),
+            query=query,
+            k=k,
+            project=project,
+            budget=state.current().settings.recall_token_budget,
+        )
+        return RecallResult(
+            recall_id=result.recall_id,
+            memories=[
+                RecalledMemory(
+                    id=i.id,
+                    type=i.type,
+                    scope_key=i.scope_key,
+                    content=i.content,
+                    trust=i.asserted_by,
+                    created_at=i.created_at,
+                )
+                for i in result.items
+            ],
+            context_block=result.context_block,
+        )
 
     @mcp.tool(
         name="remember",
@@ -47,6 +73,7 @@ def register(mcp: FastMCP) -> None:
             read_only_hint=False, destructive_hint=False, open_world_hint=False
         ),
     )
+    @tool_errors
     async def remember(
         content: Annotated[
             str, Field(min_length=1, max_length=4000, description="The memory, one idea")
@@ -56,15 +83,25 @@ def register(mcp: FastMCP) -> None:
             bool, Field(description="True only if the user stated it directly")
         ] = False,
         scope: Annotated[
-            ScopeLevel | None, Field(description="Who should see it; defaults by category")
+            ScopeLevel | None, Field(description="Who should see it; defaults to the user only")
         ] = None,
-        category: Annotated[str | None, Field(max_length=63, description="Category slug")] = None,
         entities: Annotated[
             list[Annotated[str, Field(min_length=1, max_length=100)]] | None,
             Field(max_length=20, description="People, projects or systems it is about"),
         ] = None,
     ) -> RememberResult:
-        raise ToolError("not_implemented: remember is not implemented yet")
+        saved = await memory.remember(
+            await op(),
+            content=content,
+            type=type,
+            stated_by_user=stated_by_user,
+            scope=scope,
+            entities=entities,
+            captured_by="mcp_tool",
+        )
+        return RememberResult(
+            id=saved.id, status=saved.status, scope_key=saved.scope_key, created=saved.created
+        )
 
     @mcp.tool(
         name="forget_memory",
@@ -77,10 +114,12 @@ def register(mcp: FastMCP) -> None:
             read_only_hint=False, destructive_hint=True, open_world_hint=False
         ),
     )
+    @tool_errors
     async def forget_memory(
         id: Annotated[str, Field(pattern=id_pattern("mem"), description="Memory id")],
         reason: Annotated[
             str, Field(min_length=1, max_length=500, description="Why it is forgotten")
         ],
     ) -> ForgetResult:
-        raise ToolError("not_implemented: forget_memory is not implemented yet")
+        status = await memory.forget(await op(), memory_id=id, reason=reason)
+        return ForgetResult(id=id, status=status)
