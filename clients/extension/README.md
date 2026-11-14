@@ -25,9 +25,9 @@ The manifest asks only for `storage` and `identity`, with host access to `https:
 
 ## Capture logic (not connected to the page yet)
 
-`src/capture/` holds the rules capture will follow. Nothing calls them yet: the content script reads no messages until the selector contract has been verified on the live site, and nothing is sent until the gateway's capture route exists.
+`src/capture/` holds the rules capture will follow. Nothing calls them yet: the content script reads no messages, and nothing is sent until the gateway's capture route exists.
 
-- `contract.ts`: the selector contract. The bundled default has every field empty, so it captures nothing. An empty field switches off what depends on it, and capture stays off entirely until the conversation path, project path and temporary-chat parameter are known, because opt-in could not be checked without them.
+- `contract.ts`: the selector contract. The bundled values were checked on chatgpt.com on 2026-11-14 (a Project conversation, a temporary chat, and a reply while it streamed). User and assistant messages keep their ids in different attributes, so the contract names one per role. An empty field switches off what depends on it, and capture stays off entirely until the conversation path, project path and temporary-chat parameter are known, because opt-in could not be checked without them.
 - `turns.ts`: a turn's id is the page's message id, or else a SHA-256 of conversation, role and whitespace-normalized text. Never its position, which shifts as long threads load.
 - `finality.ts`: a message is final after two seconds without a text change while nothing is streaming, and is reported once. Drift is five minutes of a page with 200 or more characters and no matched message.
 - `batching.ts`: up to 20 turns and 900 kB per request, oversized turns cut to 100,000 characters, retry with capped, jittered backoff on 429, 5xx and network errors, and other 4xx dropped.
