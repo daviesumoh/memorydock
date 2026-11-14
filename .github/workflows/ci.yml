@@ -95,6 +95,7 @@ jobs:
       GATEWAY_URL: http://127.0.0.1:8000
       AUTHKIT_DOMAIN: https://ci-placeholder.authkit.app
       CONSOLE_URL: http://localhost:3000
+      CLIENT_ID: client_ci_placeholder
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4

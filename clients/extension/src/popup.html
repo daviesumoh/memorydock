@@ -4,15 +4,24 @@
     <meta charset="utf-8" />
     <title>memorydock</title>
     <style>
-      body { font: 13px system-ui, sans-serif; margin: 0; padding: 12px 14px; width: 260px; }
+      body { font: 13px system-ui, sans-serif; margin: 0; padding: 12px 14px; width: 280px; }
       h1 { font-size: 15px; margin: 0 0 8px; }
       p { margin: 0 0 8px; }
-      a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+      button { font: inherit; padding: 4px 10px; cursor: pointer; }
+      button:focus-visible, a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+      .muted { color: #666; }
+      .error { color: #b00020; }
     </style>
   </head>
   <body>
     <h1>memorydock</h1>
-    <p id="status" role="status">Checking…</p>
+    <p id="account" role="status">Checking…</p>
+    <p id="capture" class="muted"></p>
+    <p id="error" class="error" role="alert" hidden></p>
+    <p>
+      <button id="sign-in" type="button" hidden>Sign in</button>
+      <button id="sign-out" type="button" hidden>Sign out</button>
+    </p>
     <p><a id="console-link" target="_blank" rel="noopener">Open the console</a></p>
     <script src="popup.js"></script>
   </body>

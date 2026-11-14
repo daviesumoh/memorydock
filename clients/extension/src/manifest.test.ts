@@ -13,6 +13,7 @@ const config = parseConfig({
   GATEWAY_URL: "https://gateway.example.com/base",
   AUTHKIT_DOMAIN: "https://example.authkit.app",
   CONSOLE_URL: "https://console.example.com",
+  CLIENT_ID: "client_01EXTENSIONTEST",
 });
 
 describe("extensionIdFromPublicKey", () => {

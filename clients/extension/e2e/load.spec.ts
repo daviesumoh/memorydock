@@ -32,7 +32,10 @@ test("the popup gets its status from the background script", async () => {
   const popup = await context.newPage();
   await popup.goto(`chrome-extension://${EXTENSION_ID}/popup.html`);
 
-  await expect(popup.getByRole("status")).toHaveText("Capture: paused · not signed in");
+  await expect(popup.getByRole("status")).toHaveText("Not signed in.");
+  await expect(popup.getByText("Capture: paused · not signed in")).toBeVisible();
+  await expect(popup.getByRole("button", { name: "Sign in" })).toBeVisible();
+  await expect(popup.getByRole("button", { name: "Sign out" })).toBeHidden();
   await expect(popup.getByRole("link", { name: "Open the console" })).toHaveAttribute(
     "href",
     "http://localhost:3000/",
