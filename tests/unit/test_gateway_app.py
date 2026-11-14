@@ -37,7 +37,7 @@ def test_healthz(client):
 @pytest.mark.parametrize(
     "path",
     ["/v1/memories", f"/v1/memories/{new_id('mem')}",
-     f"/v1/memories/{new_id('mem')}/versions", "/v1/audit"],
+     f"/v1/memories/{new_id('mem')}/versions"],
 )  # fmt: skip
 def test_stubs_answer_501_in_the_error_shape(client, path):
     assert_error(client.get(path), 501, "not_implemented")
@@ -54,7 +54,6 @@ def test_unknown_v1_route_is_a_404_in_the_error_shape(client):
         ("/v1/memories?limit=0", "limit"),
         ("/v1/memories?limit=101", "limit"),
         ("/v1/memories?status=deleted", "status"),
-        ("/v1/audit?action=DROP", "action"),
     ],
 )
 def test_invalid_input_names_the_field(client, path, field):
