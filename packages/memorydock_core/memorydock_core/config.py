@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     mongodb_db: str = ""
 
     autoembed_model: str = "voyage-4"
+    gateway_base_url: str = "http://127.0.0.1:8000"
+    console_origin: str = "http://localhost:3000"
+    extension_origin: str = ""
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+    git_sha: str = ""
 
     @model_validator(mode="after")
     def _database_matches_env(self) -> Settings:
