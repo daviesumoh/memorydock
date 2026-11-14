@@ -33,7 +33,22 @@ Browser code calls `/api/gateway/v1/...`. The route handler reads the session's 
 - Response bodies stream, so server-sent events work through the proxy.
 - Only JSON and `text/event-stream` responses are passed on. Proxied responses are served from the console's origin, so a gateway response that a browser could render (HTML, SVG, an untyped body) is refused with a 502 instead. Every proxy response carries `X-Content-Type-Options: nosniff` and a sandboxing `Content-Security-Policy`.
 - The proxy waits 15 seconds for response headers. Streams stay open after that.
-- Proxy errors use the shape `{ code, message, request_id }`, with codes `not_signed_in` (401), `cross_origin_request` (403), `not_found` (404), `gateway_unreachable` (502), `gateway_bad_response` (502) and `gateway_timeout` (504).
+- Proxy errors use the gateway's error shape, `{ error: { code, message, request_id } }`, with codes `not_signed_in` (401), `cross_origin_request` (403), `not_found` (404), `gateway_unreachable` (502), `gateway_bad_response` (502) and `gateway_timeout` (504).
+
+## API types and mock data
+
+Gateway types are generated from `docs/openapi.json` into `lib/api/schema.d.ts`:
+
+```
+pnpm gen:api          # regenerate after the OpenAPI file changes
+pnpm gen:api:check    # fails if schema.d.ts is out of date
+```
+
+Never edit `schema.d.ts` by hand. On a merge conflict, take either side and run `pnpm gen:api`. Until the Phase 1 contract lands, `docs/openapi.json` is a placeholder that describes only `GET /v1/me`.
+
+All gateway calls go through the typed client in `lib/api/client.ts`, which calls the same-origin proxy.
+
+While gateway routes are still stubs, `mocks/handlers.ts` answers them with fictional data. The same handlers serve tests (`mocks/node.ts`) and the browser (`mocks/browser.ts`). To use them in `pnpm dev`, set `NEXT_PUBLIC_API_MOCKING=enabled` in `console/.env.local` and restart. Production builds never mock, whatever the variable says. Remove a handler once its real route works.
 
 ## Checks
 
