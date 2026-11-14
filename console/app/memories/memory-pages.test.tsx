@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -46,6 +46,25 @@ describe("memory list", () => {
     expect(cell.textContent).toContain('<img src=x onerror=alert(1)>');
     expect(container.querySelector("script")).toBeNull();
     expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("cuts long values to one line and opens them in place when clicked", async () => {
+    renderWithQueries(<MemoryList />);
+    const cell = await screen.findByRole("button", { name: /User research on Project Lantern/ });
+
+    expect(cell.getAttribute("aria-expanded")).toBe("false");
+    expect(cell.className).toContain("truncate");
+    expect(cell.getAttribute("title")).toContain("handoff notes generated at the end of each session");
+    expect(screen.queryByRole("link", { name: "Open memory" })).toBeNull();
+
+    fireEvent.click(cell);
+    expect(cell.getAttribute("aria-expanded")).toBe("true");
+    expect(cell.className).not.toContain("truncate");
+    expect(screen.getByRole("link", { name: "Open memory" }).getAttribute("href")).toBe("/memories/mem_01JDEMO0001");
+
+    fireEvent.click(cell);
+    expect(cell.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("link", { name: "Open memory" })).toBeNull();
   });
 
   it("marks a forgotten memory instead of showing purged content", async () => {

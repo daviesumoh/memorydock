@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -44,6 +44,15 @@ describe("audit list", () => {
     const placeholder = await screen.findByText("Personal activity");
     const row = placeholder.closest("tr")!;
     expect(row.textContent).not.toMatch(/usr_|mem_|ses_/);
+  });
+
+  it("links a memory resource only once its cell is opened", async () => {
+    renderWithQueries(<AuditList />);
+    const cell = await screen.findByRole("button", { name: "memory mem_01JDEMO0009" });
+    expect(screen.queryByRole("link", { name: "Open memory" })).toBeNull();
+
+    fireEvent.click(cell);
+    expect(screen.getByRole("link", { name: "Open memory" }).getAttribute("href")).toBe("/memories/mem_01JDEMO0009");
   });
 
   it("applies filters from the URL", async () => {

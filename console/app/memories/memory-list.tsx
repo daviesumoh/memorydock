@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
-
 import { FilterForm, useFilterValues, type FilterField } from "@/components/filter-form";
 import { StatusBadge, TypeBadge } from "@/components/memory-badges";
+import { TruncatedCell } from "@/components/truncated-cell";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/view-states";
@@ -54,35 +53,43 @@ export function MemoryList() {
         />
       ) : (
         <>
-          <Table>
+          {/* Fixed layout: columns keep their share of the width and long values
+              are cut off rather than pushing the table past the page. */}
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>Memory</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Scope</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Updated (UTC)</TableHead>
+                <TableHead className="w-[38%]">Memory</TableHead>
+                <TableHead className="w-[11%]">Type</TableHead>
+                <TableHead className="w-[11%]">Status</TableHead>
+                <TableHead className="w-[16%]">Scope</TableHead>
+                <TableHead className="w-[10%]">Source</TableHead>
+                <TableHead className="w-[14%]">Updated (UTC)</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((memory) => (
                 <TableRow key={memory.id}>
-                  <TableCell className="max-w-md">
-                    <Link href={`/memories/${memory.id}`} className="block truncate underline-offset-4 hover:underline">
-                      {/* Agent-written text: rendered as text, never as HTML. */}
-                      {memory.content ?? <span className="text-muted-foreground italic">Content forgotten</span>}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
+                  <TruncatedCell
+                    fullText={memory.content ?? "Content forgotten"}
+                    href={`/memories/${memory.id}`}
+                    hrefLabel="Open memory"
+                  >
+                    {/* Agent-written text: rendered as text, never as HTML. */}
+                    {memory.content ?? <span className="text-muted-foreground italic">Content forgotten</span>}
+                  </TruncatedCell>
+                  <TableCell className="align-top">
                     <TypeBadge type={memory.type} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="align-top">
                     <StatusBadge status={memory.status} />
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{memory.scope_key}</TableCell>
-                  <TableCell>{memory.source_client}</TableCell>
-                  <TableCell className="whitespace-nowrap">{formatTimestamp(memory.updated_at)}</TableCell>
+                  <TruncatedCell fullText={memory.scope_key} className="font-mono text-xs">
+                    {memory.scope_key}
+                  </TruncatedCell>
+                  <TruncatedCell fullText={memory.source_client}>{memory.source_client}</TruncatedCell>
+                  <TruncatedCell fullText={formatTimestamp(memory.updated_at)}>
+                    {formatTimestamp(memory.updated_at)}
+                  </TruncatedCell>
                 </TableRow>
               ))}
             </TableBody>

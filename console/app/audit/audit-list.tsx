@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
-
 import { FilterForm, useFilterValues, type FilterField } from "@/components/filter-form";
 import { EffectBadge } from "@/components/memory-badges";
+import { TruncatedCell } from "@/components/truncated-cell";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/view-states";
@@ -19,33 +18,14 @@ const AUDIT_FILTERS = [
   { name: "task_id", label: "Task", kind: "text" },
 ] as const satisfies readonly FilterField[];
 
-function Actor({ actor }: { actor: Schemas["AuditActor"] }) {
-  if (!actor.user_id) return <span className="text-muted-foreground">{actor.via}</span>;
-  return (
-    <div className="flex flex-col">
-      <span className="font-mono text-xs">{actor.user_id}</span>
-      <span className="text-muted-foreground text-xs">
-        {actor.client ?? "unknown client"} via {actor.via}
-      </span>
-    </div>
-  );
+function actorText(actor: Schemas["AuditActor"]): string {
+  if (!actor.user_id) return actor.via;
+  return `${actor.user_id} · ${actor.client ?? "unknown client"} via ${actor.via}`;
 }
 
-function Resource({ resource }: { resource: Schemas["AuditResource"] }) {
+function resourceText(resource: Schemas["AuditResource"]): string {
   const label = resource.path ?? resource.id;
-  if (resource.type === "memory" && resource.id) {
-    return (
-      <Link href={`/memories/${resource.id}`} className="font-mono text-xs underline underline-offset-4">
-        {resource.id}
-      </Link>
-    );
-  }
-  return (
-    <span className="font-mono text-xs">
-      {resource.type}
-      {label ? ` ${label}` : null}
-    </span>
-  );
+  return label ? `${resource.type} ${label}` : resource.type;
 }
 
 export function AuditList() {
@@ -68,49 +48,69 @@ export function AuditList() {
         />
       ) : (
         <>
-          <Table>
+          {/* Fixed layout: columns keep their share of the width and long values
+              are cut off rather than pushing the table past the page. */}
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>Seq</TableHead>
-                <TableHead>Time (UTC)</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Actor</TableHead>
-                <TableHead>Resource</TableHead>
-                <TableHead>Decision</TableHead>
-                <TableHead>Policy</TableHead>
+                <TableHead className="w-[6%]">Seq</TableHead>
+                <TableHead className="w-[14%]">Time (UTC)</TableHead>
+                <TableHead className="w-[14%]">Action</TableHead>
+                <TableHead className="w-[20%]">Actor</TableHead>
+                <TableHead className="w-[18%]">Resource</TableHead>
+                <TableHead className="w-[12%]">Decision</TableHead>
+                <TableHead className="w-[16%]">Policy</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((entry) =>
-                entry.action === "personal_activity" ? (
+              {rows.map((entry) => {
+                const seq = (
+                  <TableCell className="align-top font-mono text-xs">{entry.seq}</TableCell>
+                );
+                const time = (
+                  <TruncatedCell fullText={formatTimestamp(entry.ts)}>{formatTimestamp(entry.ts)}</TruncatedCell>
+                );
+                if (entry.action === "personal_activity") {
                   // Another user's personal-scope activity: the gateway sends no ids.
+                  return (
+                    <TableRow key={entry.id}>
+                      {seq}
+                      {time}
+                      <TableCell colSpan={5} className="text-muted-foreground align-top italic">
+                        Personal activity
+                      </TableCell>
+                    </TableRow>
+                  );
+                }
+                const memoryId = entry.resource.type === "memory" ? entry.resource.id : null;
+                const policies = entry.decision.policy_ids.join(", ") || "None";
+                return (
                   <TableRow key={entry.id}>
-                    <TableCell className="font-mono text-xs">{entry.seq}</TableCell>
-                    <TableCell className="whitespace-nowrap">{formatTimestamp(entry.ts)}</TableCell>
-                    <TableCell colSpan={5} className="text-muted-foreground italic">
-                      Personal activity
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  <TableRow key={entry.id}>
-                    <TableCell className="font-mono text-xs">{entry.seq}</TableCell>
-                    <TableCell className="whitespace-nowrap">{formatTimestamp(entry.ts)}</TableCell>
-                    <TableCell className="font-mono text-xs">{entry.action}</TableCell>
-                    <TableCell>
-                      <Actor actor={entry.actor} />
-                    </TableCell>
-                    <TableCell>
-                      <Resource resource={entry.resource} />
-                    </TableCell>
-                    <TableCell>
+                    {seq}
+                    {time}
+                    <TruncatedCell fullText={entry.action} className="font-mono text-xs">
+                      {entry.action}
+                    </TruncatedCell>
+                    <TruncatedCell fullText={actorText(entry.actor)} className="text-xs">
+                      {actorText(entry.actor)}
+                    </TruncatedCell>
+                    <TruncatedCell
+                      fullText={resourceText(entry.resource)}
+                      href={memoryId ? `/memories/${memoryId}` : undefined}
+                      hrefLabel="Open memory"
+                      className="font-mono text-xs"
+                    >
+                      {resourceText(entry.resource)}
+                    </TruncatedCell>
+                    <TableCell className="align-top">
                       <EffectBadge effect={entry.decision.effect} />
                     </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {entry.decision.policy_ids.join(", ") || "None"}
-                    </TableCell>
+                    <TruncatedCell fullText={policies} className="font-mono text-xs">
+                      {policies}
+                    </TruncatedCell>
                   </TableRow>
-                ),
-              )}
+                );
+              })}
             </TableBody>
           </Table>
           {query.hasNextPage ? (
